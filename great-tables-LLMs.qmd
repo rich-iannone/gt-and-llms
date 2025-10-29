@@ -10,7 +10,7 @@ I ran an experiment testing whether Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro
 
 **Round 1 (zero-shot)**: 17% success rate. Out of 15 attempts, only four worked. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
 
-**Round 2 (with API reference)**: 73% success rate. Same prompts, but I provided an LLM-friendly reference guide. Success rate jumped 4.3x.
+**Round 2 (with API reference)**: 73% success rate. Same prompts, but I provided an LLM-friendly reference guide. Success rate jumped 2.7x (not bad).
 
 This post shows you exactly what went wrong, what made it right, and how to structure your prompts to get LLMs to generate correct Great Tables code consistently. If you're building tables with AI assistance, this is your playbook.
 
@@ -1448,18 +1448,20 @@ Let's break down what changed:
 
 ### The Numbers: Context Matters
 
-I reran a subset of examples with the LLM reference guide provided:
+I reran all of the examples/prompts with the LLM reference guide provided and here are the results
 
 | Example | Without Context | With Context |
 |---------|----------------|--------------|
+| Example 1 (API Latency) | 3/3 success | 3/3 success |
 | Example 2 (Tech Salaries) | 1/3 success | 3/3 success |
 | Example 3 (GitHub Repos) | 0/3 success | 2/3 success |
 | Example 4 (Coffee Ratings) | 0/3 success | 1/3 success |
+| Example 5 (A/B Test Results) | 0/3 success | 0/3 success |
 
 
-**Overall improvement: 17% → 73% success rate**
+**Overall improvement: 17% -> 60% success rate**
 
-That's a 4.3x improvement just from providing accurate API documentation!
+That's a 2.7x improvement just from providing accurate API documentation!
 
 ### What Makes Good LLM Context?
 
