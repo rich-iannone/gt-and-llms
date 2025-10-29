@@ -279,7 +279,8 @@ Engineering Manager,L5,245000,45000,155000,445000,11,Seattle
 **What the LLM gave me:**
 
 ::: {.panel-tabset}
-## Claude Sonnet 4.5
+
+## Claude Sonnet 4.5 💥
 
 ```{python}
 #| error: true
@@ -331,7 +332,7 @@ tech_salaries = tech_salaries.sort("role")
 )
 ```
 
-## GPT-5
+## GPT-5 💥
 
 ```{python}
 #| error: true
@@ -472,7 +473,8 @@ plotly.py,Python,13456,2345,234,4567,6789,4
 **What the LLM gave me:**
 
 ::: {.panel-tabset}
-## Claude Sonnet 4.5
+
+## Claude Sonnet 4.5 💥
 
 ```{python}
 #| error: true
@@ -541,7 +543,7 @@ repos_df = repos_df.with_columns(
 )
 ```
 
-## GPT-5
+## GPT-5 💥
 
 ```{python}
 #| error: true
@@ -626,7 +628,7 @@ repo_tbl = (
 repo_tbl
 ```
 
-## Gemini 2.5 Pro
+## Gemini 2.5 Pro 💥
 
 ```{python}
 #| error: true
@@ -676,7 +678,7 @@ df = load_data("github_repos.csv")
 
 :::
 
-**My reaction:** �💥💥 All three crashed and burned in spectacular fashion!
+**My reaction:** 💥💥💥 All three crashed and burned in spectacular fashion!
 
 This is where things get really interesting. Let's dissect the carnage:
 
@@ -699,6 +701,7 @@ df = df.with_columns(
 But Claude didn't think to do that. It just assumed the data was already in the right format.
 
 **GPT-5**: 💥 **CRASH!**
+
 ```
 TypeError: fmt() got an unexpected keyword argument 'escape'
 ```
@@ -744,7 +747,8 @@ Four Barrel,Espresso,3.50,4.9,789,5,4,100
 > Make a Great Tables table from `coffee_ratings.csv` that groups by shop. Format price as currency. Show rating as stars (★). Use a color gradient on the rating column (red to green). Make popular drinks (votes > 500) bold. Add a footnote explaining that wifi speed is in Mbps.
 
 ::: {.panel-tabset}
-## Claude Sonnet 4.5
+
+## Claude Sonnet 4.5 💥
 
 ```{python}
 #| error: true
@@ -785,7 +789,7 @@ coffee_df = load_data("coffee_ratings.csv")
 )
 ```
 
-## GPT-5
+## GPT-5 💥
 
 ```{python}
 #| error: true
@@ -834,7 +838,7 @@ coffee_tbl = (
 coffee_tbl
 ```
 
-## Gemini 2.5 Pro
+## Gemini 2.5 Pro 💥
 
 ```{python}
 #| error: true
@@ -963,7 +967,7 @@ Test C,50000,2890,321450,312,0.35
 
 ::: {.panel-tabset}
 
-## Claude Sonnet 4.5
+## Claude Sonnet 4.5 💥
 
 ```{python}
 #| error: true
@@ -1086,7 +1090,7 @@ gt_ab
 
 ```
 
-## GPT-5
+## GPT-5 💥
 
 ```{python}
 #| error: true
@@ -1203,7 +1207,7 @@ table = (
 table
 ```
 
-## Gemini 2.5 Pro
+## Gemini 2.5 Pro 💥
 
 ```{python}
 #| error: true
@@ -1282,18 +1286,33 @@ Claude invented `.grand_summary_rows()`, which doesn't exist in the current vers
 
 Everything else in Claude's code actually works: the Polars data transformations, the formatting, the conditional styling. It's just this hallucinated method that kills it.
 
-**GPT-5**: 🏆 **Actually quite sophisticated!**
+**GPT-5**: 💥 **CRASH!**
 
-GPT-5's code is *ambitious*. It doesn't crash immediately like the others but rather it tries to:
+```
+ShapeError: unable to append to a DataFrame of width 9 with a DataFrame of width 8
+```
+
+GPT-5's code is *ambitious* in scope. It tries to:
 
 - calculate lift vs control properly
 - build a totals row manually
 - use complex formatting patterns
 - apply multiple conditional styles
 
-This is actually impressive data engineering! The code is long and complex, but it shows that GPT-5 was really trying to understand the business logic of A/B testing, not just blindly format columns.
+This shows GPT-5 was genuinely trying to understand the business logic of A/B testing, not just blindly format columns. However, the code fails during the Polars data transformation when trying to concatenate the main dataframe with the totals row (they have different numbers of columns, causing a shape mismatch).
 
-However, it's hard to say if this would fully work without testing it thoroughly, and the complexity is a code smell. Sometimes LLMs overengineer when a simpler approach would suffice.
+Even if we fixed the Polars error, there are Great Tables API issues too:
+
+```python
+.fmt(
+    columns="lift",
+    f=lambda v: "" if v is None else f"{v:+.1f}%"
+)
+```
+
+The parameter should be `fns=` not `f=`. This is another hallucinated parameter name.
+
+**The pattern**: GPT-5 over-engineered the solution and introduced errors in both the data transformation *and* the Great Tables API calls. Sometimes LLMs try to be too clever, and that complexity becomes a liability when debugging which layer is actually broken.
 
 **Gemini 2.5 Pro**: 💥 **CRASH!**
 
