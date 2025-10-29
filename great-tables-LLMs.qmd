@@ -1,12 +1,10 @@
 ---
-title: "How to Get LLMs to Generate Great Tables Code (We Tested 3 Frontier Models)"
+title: "How to Get LLMs to Generate (Great) Great Tables Code (We Tested 3 Frontier Models)"
 author: Rich Iannone
 date: 2025-10-31
 jupyter: python3
 html-table-processing: none
 ---
-
-## The Experiment: From 17% to 73% Success Rate
 
 I ran an experiment testing whether Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro could generate working [Great Tables](https://posit-dev.github.io/great-tables/) code from descriptions of tables I wanted to create. Each prompt described the desired table and referenced a CSV file with the data.
 
@@ -104,14 +102,17 @@ endpoint,method,avg_ms,p95_ms,p99_ms,requests,errors
 
 **My prompt:**
 
-> Load the API latency data from `api_latency.csv` using Polars, then create a Great Tables table that:
-> - formats the millisecond columns with comma separators
-> - formats the requests column with comma separators
-> - formats the errors column with comma separators
-> - highlights rows where p99_ms is over 1000ms in light red
-> - adds a title "API Performance Dashboard"
-> - sorts by p99_ms descending
-> - puts the endpoint column in the stub
+```
+Load the API latency data from `api_latency.csv` using Polars, then create a
+Great Tables table that:
+- formats the millisecond columns with comma separators
+- formats the requests column with comma separators
+- formats the errors column with comma separators
+- highlights rows where p99_ms is over 1000ms in light red
+- adds a title "API Performance Dashboard"
+- sorts by p99_ms descending
+- puts the endpoint column in the stub
+```
 
 **What the LLM gave me:**
 
@@ -269,12 +270,17 @@ Engineering Manager,L5,245000,45000,155000,445000,11,Seattle
 ```
 
 **My prompt:**
-> Using Great Tables, create a table from `tech_salaries.csv` that:
-> - Groups rows by role
-> - Formats all salary/compensation columns as currency (no cents)
-> - Colors the total_comp column using a gradient from white to green, with higher values darker
-> - Shows the location in a smaller, gray font
-> - Adds column spanners: "Role" for role/level, "Compensation" for the money columns, "Details" for yoe/location
+
+```
+Using Great Tables, create a table from `tech_salaries.csv` that:
+- Groups rows by role
+- Formats all salary/compensation columns as currency (no cents)
+- Colors the total_comp column using a gradient from white to green, with
+higher values darker
+- Shows the location in a smaller, gray font
+- Adds column spanners: "Role" for role/level, "Compensation" for the money
+columns, "Details" for yoe/location
+```
 
 **What the LLM gave me:**
 
@@ -423,9 +429,17 @@ salaries_df = load_data("tech_salaries.csv")
 
 **My reaction:** 😬 Houston, we have our first problems
 
-Welcome to the part where reality bites. Let's break down what each LLM got right and hilariously wrong:
+Welcome to the part where reality bites. Let's break down what each LLM got right and hilariously wrong.
 
-**Claude Sonnet 4.5**: Actually worked! But there's a subtle issue: it used `rowname_col="role"` when the prompt asked to "group rows by role". The `rowname_col` argument puts values in the stub (row labels), but doesn't create *row groups* with group headers. That requires `groupname_col`. Claude sort of got lucky here; the table renders, but it's not technically doing what was asked.
+**Claude Sonnet 4.5**: 💥 **CRASH!**
+
+```
+ColumnNotFoundError: "stock" not found
+```
+
+Claude tried to format a column called `stock` when the actual column name is `equity`. This is the classic column name guessing problem: the LLM saw "equity compensation" in the prompt context and guessed the column might be called `stock` (a common alternative term). Wrong guess, instant crash.
+
+Also, Claude used `rowname_col="role"` when the prompt asked to "group rows by role". The `rowname_col` argument puts values in the stub (row labels), but doesn't create *row groups* with group headers. That requires `groupname_col`. So even if the column name issue were fixed, it still wouldn't be doing exactly what was asked.
 
 **GPT-5**: 💥 **CRASH!** 
 
@@ -468,7 +482,15 @@ plotly.py,Python,13456,2345,234,4567,6789,4
 ```
 
 **My prompt:**
-> Use Great Tables to create a table from `github_repos.csv` showing repository statistics. Format numbers with K suffix for thousands (e.g., 23.4K). Add a text color scale for stars (more stars = darker blue). Make the last_commit_days column show as "X days ago" and highlight in red if over 7 days. Add small bar plots in the issues columns showing open vs closed ratio.
+
+```
+se Great Tables to create a table from `github_repos.csv` showing
+repository statistics. Format numbers with K suffix for thousands
+(e.g., 23.4K). Add a text color scale for stars
+(more stars = darker blue). Make the last_commit_days column show
+as "X days ago" and highlight in red if over 7 days. Add small
+bar plots in the issues columns showing open vs closed ratio.
+```
 
 **What the LLM gave me:**
 
@@ -744,7 +766,13 @@ Four Barrel,Espresso,3.50,4.9,789,5,4,100
 
 **My prompt:**
 
-> Make a Great Tables table from `coffee_ratings.csv` that groups by shop. Format price as currency. Show rating as stars (★). Use a color gradient on the rating column (red to green). Make popular drinks (votes > 500) bold. Add a footnote explaining that wifi speed is in Mbps.
+```
+Make a Great Tables table from `coffee_ratings.csv` that
+groups by shop. Format price as currency. Show rating as
+stars (★). Use a color gradient on the rating column
+(red to green). Make popular drinks (votes > 500) bold. Add
+a footnote explaining that wifi speed is in Mbps.
+```
 
 ::: {.panel-tabset}
 
@@ -963,7 +991,13 @@ Test C,50000,2890,321450,312,0.35
 
 **My prompt:**
 
-> Using Great Tables, make a table from `ab_test_results.csv` comparing variants. Calculate conversion rate and revenue per user. Show the lift vs Control for each variant. Color the lift column: green if positive, red if negative. Add a summary row showing totals. Format bounce_rate as percentage.
+```
+Using Great Tables, make a table from `ab_test_results.csv`
+comparing variants. Calculate conversion rate and revenue
+per user. Show the lift vs Control for each variant. Color
+the lift column: green if positive, red if negative. Add a
+summary row showing totals. Format bounce_rate as percentage.
+```
 
 ::: {.panel-tabset}
 
@@ -1539,9 +1573,7 @@ The most common failure mode was **inventing methods that don't exist**:
 - `escape=` parameter in `.fmt()` (doesn't exist)
 - `where=` parameter in `loc.body()` (should be `rows=`)
 
-Here's the thing: these aren't random gibberish. They're **plausible-sounding method names** based on patterns the LLM has seen elsewhere. The LLM understands the *concept* (add a footnote, transform text, create summary rows) but fabricates the API.
-
-This is like someone who's never driven a car but has watched a lot of movies trying to explain how to start one: "Just turn the ignition key and press the go pedal!" The semantic understanding is there, but the specifics are wrong.
+Here's the thing: they're all **plausible-sounding method names** based on patterns the LLM has seen elsewhere. The LLM understands the *concept* (add a footnote, transform text, create summary rows) but fabricates the API. The semantic understanding is there, but the specifics are wrong.
 
 ### 2. R's gt Package: The Poisoned Training Data
 
@@ -1551,7 +1583,7 @@ Great Tables is the **Python port** of the R package `gt`, which has been around
 - R's ecosystem uses different parameter names
 - R's approach to styling is subtly different
 
-The LLMs are pattern-matching across both libraries and getting confused about which methods belong to which. It's like mixing up British and American English—"lift" vs "elevator"—except the consequences are syntax errors instead of confused looks.
+The LLMs are pattern-matching across both libraries and getting confused about which methods belong to which, leading to syntax errors.
 
 ### 3. The Curse of Reasonable Naming
 
@@ -1569,9 +1601,9 @@ Some of the hallucinated APIs are *better designed* than the real thing:
 .tab_style(style=style.text(weight="bold"), locations=loc.body(rows=...))  # More verbose
 ```
 
-The LLM is essentially trying to design a cleaner API on the fly. It "knows" what good API design looks like from training on thousands of libraries, so when it doesn't perfectly recall the Great Tables API, it invents something that *should* work.
+The LLM is essentially trying to design an API on the fly. It "knows" what good API design looks like from training on thousands of libraries, so when it doesn't perfectly recall the Great Tables API, it invents something that *should* work.
 
-This is actually a fascinating peek into how LLMs understand software design patterns. They're not just memorizing—they're inferring principles and applying them, even when those inferences are wrong.
+This is actually a fascinating peek into how LLMs understand software design patterns. They're not just memorizing but inferring principles and applying them (even when those inferences are wrong).
 
 ### 4. Column Name Roulette
 
@@ -1588,7 +1620,7 @@ Without access to the actual data schema, LLMs fall back on "what column names a
 
 ### 5. The Zero-Shot Handicap
 
-These experiments were **zero-shot**—no examples, no API reference, no context beyond the prompt. The LLMs were essentially asked to:
+These experiments were **zero-shot**. There were no examples and no API reference was provided (i.e., no context beyond the prompt). The LLMs were essentially asked to:
 
 1. infer the data structure from a filename
 2. recall an API they've seen limited examples of
@@ -1603,24 +1635,23 @@ That's a tough ask! Even experienced developers look up API docs constantly.
 - one working example of similar complexity
 - the API documentation
 
-Success rates shoot way up. But that kind of defeats the premise of "just tell the LLM what you want."
+Success rates shoot way up. But I suppose that kind of defeats the premise of "just tell the LLM what you want".
 
 ### 6. The Cascading Failure Effect
 
 Often, one small error would cascade into bigger problems:
 
-1. LLM guesses wrong column name → error
-2. LLM tries to work around it → more complex code
-3. LLM invents a method to solve the workaround → syntax error
-4. everything explodes
+1. LLM guesses wrong column name -> error
+2. LLM tries to work around it -> more complex code
+3. LLM invents a method to solve the workaround -> syntax error
 
-This is why **Example 1 had a 100% success rate but Example 5 had 0%**. Simple requests fail cleanly. Complex requests fail in recursive, compounding ways.
+This is why Example 1 had a 100% success rate but Examples 3, 4, and 5 had 0%. Simple requests fail more cleanly (i.e., 1-2 things to fix). Complex requests fail in recursive, compounding ways.
 
-## The Real Lesson: LLMs Are Junior Developers
+## The Real Lesson: Understanding LLM Capabilities
 
-Here's my actual takeaway after running these experiments:
+Here's my takeaway after running these experiments:
 
-**LLMs are like junior developers who have read a lot of documentation but haven't built much.**
+LLMs are pattern matchers with impressive breadth but shallow depth.
 
 They:
 
@@ -1631,13 +1662,11 @@ They:
 - struggle with complex, multi-step logic
 - don't "know what they don't know"
 
-If you were code reviewing a junior dev who submitted this Great Tables code, you'd say: "Good instincts, but go read the docs and try again."
-
-The dangerous part is the **confidence**. A junior dev might say "I think it's `.tab_footnote()`?" An LLM just writes `.tab_footnote()` and moves on. No hesitation, no uncertainty markers, just confidently wrong code.
+If you were reviewing this Great Tables code, you'd say: "Good instincts, but check the docs and try again".
 
 ## So Should You Use LLMs for Great Tables?
 
-**Yes—but treat them like documentation-aware autocomplete, not magic.**
+Yes, but treat them like documentation-aware autocomplete (and not as magic).
 
 **Do:**
 
@@ -1666,78 +1695,69 @@ This is still way faster than writing from scratch! But it requires you to be an
 
 ## What This Reveals About Current AI Capabilities
 
-The truth is more interesting than simple "LLMs are useless" or "LLMs are perfect" takes: **LLMs are pattern completion engines with semantic understanding**. They're incredible at generating plausible code that often works, but they lack the grounding to know when they've strayed from reality into hallucination.
+The truth is more interesting than simple "LLMs are useless" or "LLMs are perfect" takes: **LLMs are pattern completion engines with semantic understanding**. They're awesome at generating plausible code that often works, but they also lack the grounding to know when they've strayed from reality into hallucination.
 
 For Great Tables specifically, the API surface is small enough and specialized enough that LLMs haven't seen it enough times to deeply memorize it. They're interpolating from similar libraries (pandas styling, R's gt, plotly tables) and hoping for the best.
 
-**This will get better**. As Great Tables grows and more examples enter the training data, LLM accuracy will improve. But we're seeing a fascinating snapshot of AI capabilities in late 2025: incredible at the common stuff, hilariously bad at the long tail.
+This *will* get better. As Great Tables grows and more examples enter the training data, LLM accuracy will improve. But we're seeing a fascinating snapshot of AI capabilities in late 2025: great at the common stuff, not so good at the long tail.
 
-Honestly, that makes me more excited to use them, not less. Understanding the failure modes makes you better at prompting. And being better at prompting means you can actually create code faster and more reliably. You just need to keep your critical thinking hat on.
+However, that makes me more excited to use them, not less. Understanding the failure modes makes you better at prompting (you're learning!). And being better at prompting means you can actually create code faster and more reliably. You just need to keep your critical thinking hat on.
 
 ## Practical Tips for LLM-Assisted Table Making
 
 Based on everything we've learned from these experiments, here are some concrete strategies that actually work when using LLMs to generate Great Tables code:
 
-1. **Start with the data transformation.** Get your Polars/Pandas code right first, then style.
+1. Start with the data transformation. Get your Polars/Pandas code right first, then style.
 
-2. **Give explicit schemas.** Don't make the LLM guess column names.
+2. Give explicit schemas. Don't make the LLM guess column names.
 
-3. **Prompt with the library name.** "Using Great Tables in Python" not "make a table"
+3. Prompt with the library name. "Using Great Tables in Python" not "make a table"
 
-4. **Reference specific methods.** If you know you want `fmt_currency()`, mention it.
+4. Reference specific methods. If you know you want `fmt_currency()`, mention it.
 
-5. **Break complex requests into steps.** Don't ask for everything at once.
+5. Break complex requests into steps. Don't ask for everything at once.
 
-6. **Show working examples.** One example is worth a thousand words of prompting.
+6. Show working examples. One example is worth a thousand words of prompting.
 
-7. **Verify against docs.** When something fails, look up the method in the [Great Tables API reference](https://posit-dev.github.io/great-tables/reference/).
+7. Verify against docs. When something fails, look up the method in the [Great Tables API reference](https://posit-dev.github.io/great-tables/reference/).
 
-8. **Expect to iterate.** The first output is a draft, not production code.
+8. Expect to iterate. The first output is a draft, not production code.
 
 ## Why This Matters for Great Tables
 
 As the authors of Great Tables, we want LLMs to be excellent at generating code for our library. Not just okay but *excellent*. Why?
 
-1. **Lower barrier to entry**: Users can describe what they want and get working code
-2. **Faster prototyping**: Even experienced users can scaffold complex tables quickly
-3. **Better discoverability**: LLMs can suggest features users didn't know existed
-4. **Reduced documentation friction**: Natural language queries supplement formal docs
+1. Lower barrier to entry: users can describe what they want and get working code
+2. Faster prototyping: even experienced users can scaffold complex tables quickly
+3. Better discoverability: LLMs can suggest features users didn't know existed
+4. Reduced documentation friction: natural language queries supplement formal docs
 
-But here's the catch: **LLMs can only be as good as the information available to them**.
+But the catch is that LLMs can only be as good as the information available to them.
 
 ### The Path Forward
 
 This experiment revealed exactly what LLMs need to succeed with Great Tables:
 
-**✅ Clear API documentation**: We have this at [posit-dev.github.io/great-tables](https://posit-dev.github.io/great-tables/)
-
-**✅ Abundant code examples**: More real-world examples = better pattern recognition
-
-**✅ LLM-specific context**: The `llms.txt` reference guide we created
-
-**✅ Explicit error corrections**: "Don't use X, use Y instead" lists
-
-**⚠️ More training data**: As Great Tables grows, LLM performance will naturally improve
+- clear API documentation: we have this at [posit-dev.github.io/great-tables](https://posit-dev.github.io/great-tables/)
+- abundant code examples: more real-world examples = better pattern recognition
+- LLM-specific context: The `llms.txt` reference guide we created
+- explicit error corrections: "Don't use X, use Y instead" lists
+- more training data: as Great Tables grows, LLM performance will naturally improve
 
 ### What We're Doing About It
 
-We're committed to making Great Tables the most LLM-friendly table library:
+We're committed to making Great Tables the most LLM-friendly table library. Some of the things are doing (or plan to do) include:
 
-1. **Publishing more examples**: real-world use cases in our documentation
-2. **Maintaining llms.txt**: keep the reference guide current with API changes
-3. **Creating anti-patterns guide**: document common mistakes and corrections
-4. **Building test suites**: verify LLM-generated code patterns actually work
-5. **Engaging with AI providers**: share our learnings about API-specific challenges
+1. publishing more examples with real-world use cases in our documentation
+2. maintaining llms.txt, keeping that reference guide current with API changes
+3. creating anti-patterns guide that documents common mistakes and corrections
+4. building test suites to verify LLM-generated code patterns actually work
 
 ### A Challenge to the Community
 
-If you're using Great Tables with LLM assistance:
+If you're using Great Tables with LLM assistance share your prompts and results! Post them as GitHub discussions, blog about them, put them on the socials. The more examples of Great Tables code in the wild, the better LLMs become at generating it.
 
-**Share your prompts and results!** Post them as GitHub discussions, blog about them, post them on the socials. The more examples of Great Tables code in the wild, the better LLMs become at generating it.
-
-**Report hallucinations!** When an LLM invents a method that doesn't exist, tell us. We can add it to the llms.txt anti-patterns section.
-
-**Contribute to llms.txt!** Found a pattern that works well? A common mistake you keep seeing? Submit a PR to improve the reference guide.
+Another valuable thing is reporting hallucinations! When an LLM invents a method that doesn't exist, tell us. We can add it to the `llms.txt` anti-patterns section.
 
 ## Conclusion: The Future is Collaborative (and Bright)
 
@@ -1747,30 +1767,27 @@ Let's recap the journey:
 
 **Breakthrough**: Adding structured API context (llms.txt) increased success to 73%. Same models, same prompts, dramatically better results.
 
-**The insight**: LLMs don't need to memorize every API. They need *access* to accurate information and clear guidance on common mistakes.
+**The insight**: LLMs don't need to memorize every API. They need access to accurate information and clear guidance on common mistakes.
 
-This is actually **great news** for everyone:
-
-**For Users**: You can get excellent results today by:
+Users can get excellent results today by:
 
 - providing column schemas in your prompts
 - referencing the llms.txt guide
 - starting simple and iterating
 - testing output immediately
 
-**For Library Authors**: You can dramatically improve LLM performance by:
+Library authors ought to know that they can dramatically improve LLM performance by:
 
 - creating LLM-friendly reference guides
 - publishing anti-patterns documentation  
 - sharing abundant code examples
 - engaging with how LLMs learn
 
-**For the Ecosystem**: We're seeing the emergence of a new standard:
+The ecosystem is moving in the right direction and we're seeing the emergence of a new standard:
 
-- `.well-known/llms.txt` as a convention
+- `llms.txt` as a convention
 - explicit hallucination prevention
 - library-specific AI context
-- collaborative improvement
 
 ### The Real Takeaway
 
@@ -1792,23 +1809,19 @@ All the code, data, results, and the complete `llms.txt` text file are in this r
 
 **[github.com/rich-iannone/gt-and-llms](https://github.com/rich-iannone/gt-and-llms)**
 
-Clone it. Run the experiments. Try the prompts with and without context. See the dramatic difference for yourself.
+Clone it. Run the experiments. Try the prompts with and without context (and see the difference for yourself).
 
-Then go build something beautiful with Great Tables and LLM assistance. And when you do, share it so the next person's LLM can learn from your example.
-
-Because that's kinda how we make this technology work for everyone.
+Then go build something beautiful with Great Tables and LLM assistance! And when you do, share it out so (eventually) LLMs see it and can learn from your example.
 
 <hr />
 
-**Want to contribute?** 
+Want to contribute?
 
 - Report LLM hallucinations: [GitHub Issues](https://github.com/posit-dev/great-tables/issues)
 - Share your examples: Post in [GitHub Discussions](https://github.com/posit-dev/great-tables/discussions)
 
-**Questions about Great Tables?**
+Questions about Great Tables?
 
 - Documentation: [posit-dev.github.io/great-tables](https://posit-dev.github.io/great-tables/)
 - API Reference: [posit-dev.github.io/great-tables/reference](https://posit-dev.github.io/great-tables/reference/)
 - Community: [GitHub Discussions](https://github.com/posit-dev/great-tables/discussions)
-
-*If this post helped you understand how to work effectively with LLMs on specialized libraries, share it with others who might benefit. The more people understand context-aware prompting, the better our tools become.*
