@@ -8,9 +8,9 @@ html-table-processing: none
 
 I ran an experiment testing whether Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro could generate working [Great Tables](https://posit-dev.github.io/great-tables/) code from descriptions of tables I wanted to create. Each prompt described the desired table and referenced a CSV file with the data.
 
-**Round 1 (Zero-shot)**: 17% success rate. Out of 15 attempts, only four worked. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
+**Round 1 (zero-shot)**: 17% success rate. Out of 15 attempts, only four worked. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
 
-**Round 2 (With API reference)**: 73% success rate. Same prompts, but I provided an LLM-friendly reference guide. Success rate jumped 4.3x.
+**Round 2 (with API reference)**: 73% success rate. Same prompts, but I provided an LLM-friendly reference guide. Success rate jumped 4.3x.
 
 This post shows you exactly what went wrong, what made it right, and how to structure your prompts to get LLMs to generate correct Great Tables code consistently. If you're building tables with AI assistance, this is your playbook.
 
@@ -26,36 +26,32 @@ I created 5 examples ranging from simple to complex:
 
 For each example, I gave all three LLMs identical prompts describing what I wanted, then asked them to generate Great Tables code. These experiments were performed on October 28, 2025, using GitHub Copilot's "Ask" feature in separate chat sessions to avoid contamination (later prompts didn't get hints from earlier ones).
 
-**The key constraint: zero-shot.** No examples, no API documentation, just the prompt and the LLM's training data.
-
-Let's see how they did.
+The key constraint: zero-shot. No examples, no API documentation, just the prompt and the LLM's training data. Let's see how they did!
 
 ## Why Not Markdown Tables?
 
-Before we dive in, let's address the elephant in the room. You might be thinking: "Can't an LLM just generate a Markdown table?"
+Before we dive in, let's address an obvious question: "Can't an LLM just generate a Markdown table?"
 
-Sure. And you can also travel by horse and buggy. Let me show you why that's not the best idea with a simple example:
+Well, yes. But there's a reason we're focusing on Great Tables. Here's a simple example to illustrate:
 
-```markdown
 | Endpoint | Method | Avg (ms) | P95 (ms) | Requests | Error Rate |
 |----------|--------|----------|----------|----------|------------|
 | /api/users | GET | 45 | 89 | 125,043 | 0.0096% |
 | /api/posts | GET | 32 | 67 | 89,234 | 0.0034% |
 | /api/auth/login | POST | 156 | 320 | 45,678 | 0.5122% |
-```
 
-This looks... fine, I guess? But now try to:
+This gets the job done for basic data display. But then you can't really do any of these things:
 
 - conditionally highlight slow endpoints
 - format those percentages consistently
 - make the p95 values stand out when they're concerning
 - add color-coded performance indicators
 - calculate and display summary statistics
-- make it not look like it's from 1999
+- apply professional styling
 
-You can't. Markdown tables are mostly just text. They're the digital equivalent of writing on stone tablets. Great Tables, on the other hand, gives you a programmable canvas where styling, formatting, and conditional logic are first-class citizens.
+Markdown tables are static text. This is great for simple cases, but limited when you need dynamic formatting and conditional logic. Great Tables, on the other hand, gives you a programmable canvas where styling, formatting, and data-driven presentation are built-in features.
 
-Okay, rant over. Let's get on with the LLM tests.
+With that context established, let's see how LLMs handle to generation of Great Tables code.
 
 ## Setup
 
@@ -78,9 +74,9 @@ As the authors of Great Tables, we have a vested interest in making our library 
 
 But we also want to be honest about current capabilities and limitations. This experiment is our way of:
 
-1. **Understanding the gaps**: what do LLMs get wrong and why?
-2. **Finding solutions**: what context helps them succeed?
-3. **Sharing learnings**: how can other library authors make their APIs more LLM-accessible?
+1. understanding the gaps (i.e., what do LLMs get wrong and why?)
+2. finding solutions (e.g., what context helps users succeed?)
+3. sharing learnings so that other library authors make their APIs more LLM-accessible
 
 The goal isn't to shame LLMs or claim they're useless. The goal is to establish a baseline, identify the problems, and show the path to making this work more reliably.
 
