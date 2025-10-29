@@ -8,7 +8,7 @@ html-table-processing: none
 
 I ran an experiment testing whether Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro could generate working [Great Tables](https://posit-dev.github.io/great-tables/) code from descriptions of tables I wanted to create. Each prompt described the desired table and referenced a CSV file with the data.
 
-**Round 1 (Zero-shot)**: 17% success rate. Out of 15 attempts, only 3 worked. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
+**Round 1 (Zero-shot)**: 17% success rate. Out of 15 attempts, only four worked. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
 
 **Round 2 (With API reference)**: 73% success rate. Same prompts, but I provided an LLM-friendly reference guide. Success rate jumped 4.3x.
 
