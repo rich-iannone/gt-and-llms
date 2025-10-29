@@ -1,0 +1,7 @@
+repo,language,stars,forks,issues_open,issues_closed,prs_merged,last_commit_days
+great-tables,Python,1834,67,23,234,456,2
+polars,Rust,23456,1234,345,5678,8934,1
+pandas,Python,38934,15678,2345,23456,12345,3
+duckdb,C++,15234,890,123,3456,5678,1
+quarto-cli,TypeScript,8234,456,89,1234,2345,5
+plotly.py,Python,13456,2345,234,4567,6789,4
