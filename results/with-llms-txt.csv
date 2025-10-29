@@ -1,0 +1,759 @@
+,prompt,Claude Sonnet 4.5,GPT-5,Gemini 2.5 Pro
+Example 1,"Load the API latency data from `api_latency.csv` using Polars, then create a Great Tables table that:
+- formats the millisecond columns with comma separators
+- formats the requests column with comma separators
+- formats the errors column with comma separators
+- highlights rows where p99_ms is over 1000ms in light red
+- adds a title ""API Performance Dashboard""
+- sorts by p99_ms descending
+puts the endpoint column in the stub
+
+Use .well-known/llms.txt as the API reference.","from great_tables import GT, md, style, loc
+
+# Load the data
+api_latency = load_data(""api_latency.csv"")
+
+# Sort by p99_ms descending
+api_latency = api_latency.sort(""p99_ms"", descending=True)
+
+# Create the table
+(
+    GT(api_latency, rowname_col=""endpoint"")
+    .tab_header(title=""API Performance Dashboard"")
+    .fmt_number(
+        columns=[""p50_ms"", ""p95_ms"", ""p99_ms""],
+        use_seps=True,
+        decimals=0
+    )
+    .fmt_number(
+        columns=[""requests"", ""errors""],
+        use_seps=True,
+        decimals=0
+    )
+    .tab_style(
+        style=style.fill(color=""#ffcccc""),
+        locations=loc.body(
+            columns=cs.all(),
+            rows=pl.col(""p99_ms"") > 1000
+        )
+    )
+)","from great_tables import GT, style
+
+# Load and sort data by p99_ms descending
+df = load_data(""api_latency.csv"").sort(pl.col(""p99_ms""), descending=True)
+
+# Build Great Tables table
+api_table = (
+    GT(df, rowname_col=""endpoint"")
+    .fmt_number(
+        columns=[""p50_ms"", ""p95_ms"", ""p99_ms"", ""requests"", ""errors""],
+        decimals=0,
+        use_grouping=True
+    )
+    .tab_style(
+        style=style.fill(color=""#ffe5e5""),
+        locations=lambda tbl: tbl.body(rows=tbl.data[""p99_ms""] > 1000)
+    )
+    .tab_header(title=""API Performance Dashboard"")
+)
+
+api_table","from great_tables import GT
+from great_tables.style import style
+from great_tables.expressions import px
+
+# Load the API latency data
+api_latency_df = load_data(""api_latency.csv"")
+
+# Create and display the table
+(
+    GT(
+        api_latency_df.sort(""p99_ms"", descending=True),
+        rowname_col=""endpoint""
+    )
+    .tab_header(title=""API Performance Dashboard"")
+    .fmt_number(
+        columns=cs.contains(""_ms"") | cs.matches(""requests|errors""),
+        use_seps=True,
+        decimals=0
+    )
+    .tab_style(
+        style=style.fill(color=""lightcoral""),
+        where=px(""p99_ms"") > 1000
+    )
+)"
+Example 2,"Using Great Tables, create a table from `tech_salaries.csv` that:
+- Groups rows by role
+- Formats all salary/compensation columns as currency (no cents)
+- Colors the total_comp column using a gradient from white to green, with higher values darker
+- Shows the location in a smaller, gray font
+Adds column spanners: ""Role"" for role/level, ""Compensation"" for the money columns, ""Details"" for yoe/location
+
+Use .well-known/llms.txt as the API reference.","from great_tables import GT, style, loc
+import polars as pl
+
+# Load the data
+tech_salaries = load_data(""tech_salaries.csv"")
+
+# Create the table
+gt_table = (
+    GT(tech_salaries, groupname_col=""role"")
+    .tab_header(title=""Tech Salaries by Role"")
+    .fmt_currency(
+        columns=[""base_salary"", ""bonus"", ""equity"", ""total_comp""],
+        currency=""USD"",
+        decimals=0
+    )
+    .data_color(
+        columns=""total_comp"",
+        palette=[""white"", ""green""],
+        domain=[tech_salaries[""total_comp""].min(), tech_salaries[""total_comp""].max()]
+    )
+    .tab_style(
+        style=style.text(size=""smaller"", color=""gray""),
+        locations=loc.body(columns=""location"")
+    )
+    .tab_spanner(
+        label=""Role"",
+        columns=[""role"", ""level""]
+    )
+    .tab_spanner(
+        label=""Compensation"",
+        columns=[""base_salary"", ""bonus"", ""equity"", ""total_comp""]
+    )
+    .tab_spanner(
+        label=""Details"",
+        columns=[""yoe"", ""location""]
+    )
+)
+
+gt_table","import great_tables as gt
+
+# Load data
+df = load_data(""tech_salaries.csv"")
+
+# Build table
+tbl = (
+    gt.GT(df, groupname_col=""role"")
+      .tab_spanner(label=""Role"", columns=[""role"", ""level""])
+      .tab_spanner(label=""Compensation"", columns=[""base_salary"", ""equity"", ""bonus"", ""total_comp""])  # Changed from stock_grant_value
+      .tab_spanner(label=""Details"", columns=[""yoe"", ""location""])
+      .fmt_currency(columns=[""base_salary"", ""equity"", ""bonus"", ""total_comp""],  # Changed from stock_grant_value
+                    currency=""USD"", decimals=0)
+      .data_color(columns=""total_comp"", palette=[""#ffffff"", ""#0b6623""])
+      .tab_style(
+          style=gt.style.text(color=""#6e6e6e"", size=""0.8em""),  # Fixed: use gt.style.text() instead
+          locations=gt.loc.body(columns=""location"")  # Fixed: use gt.loc.body() instead
+      )
+)
+
+tbl
+
+","from great_tables import GT
+from great_tables import style
+
+# Load the data
+df = load_data(""tech_salaries.csv"")
+
+# Create a summary table, aggregating data by 'role'
+df_summary = (
+    df
+    .group_by(""role"")
+    .agg(
+        pl.mean(""total_comp""),
+        pl.mean(""base_salary""),
+        pl.mean(""bonus""),
+        pl.mean(""yoe""),
+        pl.first(""location""),
+    )
+    .sort(""total_comp"", descending=True)
+    .head(10)
+)
+
+# Create the table with great_tables
+(
+    GT(df_summary, rowname_col=""role"")
+    .tab_spanner(label=""Compensation"", columns=[""base_salary"", ""bonus"", ""total_comp""])
+    .tab_spanner(label=""Details"", columns=[""yoe"", ""location""])
+    .fmt_currency(columns=[""total_comp"", ""base_salary"", ""bonus""], decimals=0)
+    .data_color(
+        columns=""total_comp"",
+        palette=[""white"", ""green""],
+    )
+   .tab_style(
+        style=style.text(size=""small"", color=""gray""),
+        locations=loc.body(columns=""location"")
+    )
+    .cols_label(
+        total_comp=""Total"",
+        base_salary=""Salary"",
+        bonus=""Bonus"",
+        yoe=""YoE"",
+        location=""Location"",
+    )
+    .tab_header(title=""Tech Salaries by Role"")
+    .tab_source_note(source_note=""Top 10 roles by total compensation shown."")
+)"
+Example 3,"Use Great Tables to create a table from `github_repos.csv` showing repository statistics. Format numbers with K suffix for thousands (e.g., 23.4K). Add a text color scale for stars (more stars = darker blue). Make the last_commit_days column show as ""X days ago"" and highlight in red if over 7 days. Add small bar plots in the issues columns showing open vs closed ratio.
+
+Use .well-known/llms.txt as the API reference.","from great_tables import GT, md, html, nanoplot_options
+from great_tables.data import gtcars
+import polars as pl
+
+# Load the GitHub repos data
+github_repos = load_data(""github_repos.csv"")
+
+# Create the table
+gt_repos = (
+    GT(github_repos)
+    # Format star counts with K suffix
+    .fmt_number(
+        columns=""stars"",
+        compact=True,
+        decimals=1
+    )
+    # Format forks with K suffix
+    .fmt_number(
+        columns=""forks"",
+        compact=True,
+        decimals=1
+    )
+    # Add color scale for stars (darker blue = more stars)
+    .data_color(
+        columns=""stars"",
+        palette=""Blues"",
+        domain=None
+    )
+    # Format last_commit_days as ""X days ago""
+    .fmt(
+        columns=""last_commit_days"",
+        fns=lambda x: f""{x} days ago""
+    )
+    # Highlight last_commit_days > 7 in red
+    .tab_style(
+        style=style.fill(color=""red""),
+        locations=loc.body(
+            columns=""last_commit_days"",
+            rows=pl.col(""last_commit_days"") > 7
+        )
+    )
+    # Add bar plots for issues (open vs closed ratio)
+    .fmt_nanoplot(
+        columns=""issues_open"",
+        plot_type=""bar"",
+        options=nanoplot_options(
+            data_bar_stroke_color=""steelblue"",
+            data_bar_fill_color=""lightblue""
+        )
+    )
+    # Add title and subtitle
+    .tab_header(
+        title=""GitHub Repository Statistics"",
+        subtitle=""Popular repositories with activity metrics""
+    )
+)
+
+gt_repos
+","import polars as pl
+import math
+from IPython.display import HTML
+
+def format_k(n):
+    if n is None or (isinstance(n, float) and math.isnan(n)):
+        return """"
+    if n >= 1000:
+        return f""{n/1000:.1f}K""
+    return f""{n}""
+
+def blue_scale(val, vmin, vmax):
+    if vmax == vmin:
+        t = 0
+    else:
+        t = (val - vmin) / (vmax - vmin)
+    # Light to dark blue ramp
+    # start (R,G,B) = (207,232,255), end = (8,48,107)
+    r = int(207 + (8-207)*t)
+    g = int(232 + (48-232)*t)
+    b = int(255 + (107-255)*t)
+    return f""rgb({r},{g},{b})""
+
+def issues_bar(open_cnt, closed_cnt, width_px=120, height_px=14):
+    total = (open_cnt or 0) + (closed_cnt or 0)
+    if total == 0:
+        return f'<div style=""width:{width_px}px;height:{height_px}px;background:#eee;border-radius:4px;""></div>'
+    open_w = (open_cnt / total) * width_px
+    closed_w = width_px - open_w
+    return (
+        f'<div style=""display:flex;width:{width_px}px;height:{height_px}px;border:1px solid #ccc;border-radius:4px;overflow:hidden;font-size:0;"">'
+        f'<div title=""Open: {open_cnt}"" style=""width:{open_w}px;background:#ff9800;""></div>'
+        f'<div title=""Closed: {closed_cnt}"" style=""width:{closed_w}px;background:#4caf50;""></div>'
+        f'</div>'
+    )
+
+# Load data
+df = load_data(""github_repos.csv"")
+
+# Expected columns (adjust if needed):
+# name, stars, forks, watchers, last_commit_days, open_issues, closed_issues
+missing = [c for c in [""name"",""stars"",""forks"",""watchers"",""last_commit_days"",""open_issues"",""closed_issues""] if c not in df.columns]
+if missing:
+    raise ValueError(f""Missing expected columns: {missing}"")
+
+# Compute ranges for color scaling
+stars_min = df[""stars""].min()
+stars_max = df[""stars""].max()
+
+rows_html = []
+for row in df.iter_rows(named=True):
+    stars = row[""stars""]
+    forks = row[""forks""]
+    watchers = row[""watchers""]
+    last_days = row[""last_commit_days""]
+    open_i = row[""open_issues""]
+    closed_i = row[""closed_issues""]
+
+    stars_color = blue_scale(stars, stars_min, stars_max)
+    stars_fmt = format_k(stars)
+    forks_fmt = format_k(forks)
+    watchers_fmt = format_k(watchers)
+
+    stale = (last_days is not None) and (last_days > 7)
+    last_txt = f""{last_days} days ago"" if last_days is not None else """"
+    last_html = f'<span style=""color:{""#d32f2f"" if stale else ""#333""};"">{last_txt}</span>'
+
+    issues_html = issues_bar(open_i, closed_i)
+
+    rows_html.append(
+        ""<tr>""
+        f""<td style='text-align:left;padding:6px 10px;font-weight:600;'>{row['name']}</td>""
+        f""<td style='text-align:right;padding:6px 10px;color:{stars_color};font-weight:600;'>{stars_fmt}</td>""
+        f""<td style='text-align:right;padding:6px 10px;'>{forks_fmt}</td>""
+        f""<td style='text-align:right;padding:6px 10px;'>{watchers_fmt}</td>""
+        f""<td style='text-align:center;padding:6px 10px;'>{last_html}</td>""
+        f""<td style='text-align:center;padding:6px 10px;'>{issues_html}</td>""
+        ""</tr>""
+    )
+
+table_html = (
+    ""<div class='repo-table-wrapper'>""
+    ""<table class='repo-table' style='border-collapse:collapse;width:100%;font-family:system-ui,sans-serif;font-size:14px;'>""
+    ""<thead>""
+    ""<tr style='background:#f5f7fa;border-bottom:2px solid #ccc;'>""
+    ""<th style='text-align:left;padding:8px 10px;'>Repository</th>""
+    ""<th style='text-align:right;padding:8px 10px;'>Stars</th>""
+    ""<th style='text-align:right;padding:8px 10px;'>Forks</th>""
+    ""<th style='text-align:right;padding:8px 10px;'>Watchers</th>""
+    ""<th style='text-align:center;padding:8px 10px;'>Last Commit</th>""
+    ""<th style='text-align:center;padding:8px 10px;'>Issues (Open vs Closed)</th>""
+    ""</tr>""
+    ""</thead>""
+    ""<tbody>""
+    + """".join(rows_html) +
+    ""</tbody></table></div>""
+)
+
+HTML(table_html)
+","from great_tables import GT, style, loc
+
+# Load the data
+df = load_data(""github_repos.csv"")
+
+# Create a list-column for the nanoplot bars
+df = df.with_columns(
+    issues_data=pl.concat_list([""issues_open"", ""issues_closed""])  # Fixed column names
+)
+
+# Create and format the table
+(
+    GT(df, rowname_col=""repo"")  # Changed: use GT instead of GreatTable, and ""repo"" instead of ""name""
+    .cols_hide(columns=[""issues_open"", ""issues_closed""])  # Fixed column names
+    .fmt_number(
+        columns=[""stars"", ""forks""],
+        compact=True
+    )
+    .fmt(
+        columns=""last_commit_days"",
+        fns=lambda x: f""{x} days ago""  # Fixed: use fns instead of fn
+    )
+    .fmt_nanoplot(  # Fixed: use fmt_nanoplot method
+        columns=""issues_data"",
+        plot_type=""bar""
+    )
+    .data_color(
+        columns=""stars"",
+        palette=[""#e1effb"", ""#00397a""],
+        domain=[df[""stars""].min(), df[""stars""].max()]
+    )
+    .tab_style(
+        style=style.text(color=""red"", weight=""bold""),
+        locations=loc.body(
+            columns=""last_commit_days"",
+            rows=pl.col(""last_commit_days"") > 7
+        )
+    )
+    .cols_label(
+        stars=""Stars"",
+        forks=""Forks"",
+        last_commit_days=""Last Commit"",
+        issues_data=""Issues (Open/Closed)""
+    )
+    .tab_header(
+        title=""GitHub Repository Statistics"",
+        subtitle=""A summary of key metrics for popular open-source projects.""
+    )
+)
+
+"
+Example 4,"Make a Great Tables table from `coffee_ratings.csv` that groups by shop. Format price as currency. Show rating as stars (★). Use a color gradient on the rating column (red to green). Make popular drinks (votes > 500) bold. Add a footnote explaining that wifi speed is in Mbps.
+
+Use .well-known/llms.txt as the API reference.","from great_tables import GT, md, html
+from great_tables import loc, style
+
+# Load the data
+coffee_data = load_data(""coffee_ratings.csv"")
+
+# Group by shop and aggregate
+coffee_summary = (
+    coffee_data
+    .group_by(""shop"")
+    .agg([
+        pl.col(""drink"").first().alias(""drink""),
+        pl.col(""price"").mean().alias(""avg_price""),
+        pl.col(""rating"").mean().alias(""avg_rating""),
+        pl.col(""votes"").sum().alias(""total_votes""),
+        pl.col(""wifi_speed"").mean().alias(""avg_wifi_speed"")
+    ])
+)
+
+# Create the table
+gt_table = (
+    GT(coffee_summary)
+    .fmt_currency(columns=""avg_price"", currency=""USD"")
+    .fmt(
+        columns=""avg_rating"",
+        fns=lambda x: ""★"" * int(round(x))
+    )
+    .data_color(
+        columns=""avg_rating"",
+        palette=[""red"", ""yellow"", ""green""],
+        domain=[1, 5]
+    )
+    .tab_style(
+        style=style.text(weight=""bold""),
+        locations=loc.body(columns=""drink"", rows=pl.col(""total_votes"") > 500)
+    )
+    .tab_source_note(
+        source_note=""Note: WiFi speed is measured in Mbps (megabits per second).""
+    )
+    .tab_header(
+        title=""Coffee Shop Ratings"",
+        subtitle=""Grouped by shop with average ratings and prices""
+    )
+)
+
+gt_table","# Load and prepare coffee ratings data
+df = load_data(""coffee_ratings.csv"")
+
+# Aggregate by shop
+agg_df = (
+    df.group_by(""shop"")
+      .agg([
+          pl.col(""rating"").mean().alias(""avg_rating""),
+          pl.col(""price"").mean().alias(""avg_price""),
+          pl.col(""votes"").sum().alias(""total_votes""),
+          pl.col(""wifi_speed"").mean().alias(""wifi_speed_mbps"")
+      ])
+      .sort(""avg_rating"", descending=True)
+)
+
+# Convert to pandas for styling
+pdf = agg_df.to_pandas()
+
+# Stars for rating (rounded; at least 1 star)
+pdf[""rating_stars""] = pdf[""avg_rating""].round().clip(lower=1).astype(int).apply(lambda n: ""★"" * n)
+
+# Reorder columns
+pdf = pdf[[""shop"", ""rating_stars"", ""avg_rating"", ""avg_price"", ""total_votes"", ""wifi_speed_mbps""]]
+
+# Styling functions
+def bold_popular(row):
+    if row[""total_votes""] > 500:
+        return [""font-weight: bold;"" for _ in row]
+    return [""""] * len(row)
+
+# Build styled table
+styled_table = (
+    pdf.style
+       .format({
+           ""avg_price"": ""${:,.2f}"",
+           ""avg_rating"": ""{:.2f}"",
+           ""wifi_speed_mbps"": ""{:.1f}"",
+           ""total_votes"": ""{:,}""
+       })
+       .apply(bold_popular, axis=1)
+       .background_gradient(cmap=""RdYlGn"", subset=[""avg_rating""])
+       .set_caption(""Footnote: WiFi speed values are in Mbps."")
+)
+
+styled_table","from great_tables import GT, style, loc, exibble
+from great_tables.data import sp500
+
+coffee_ratings = load_data(""coffee_ratings.csv"")
+
+# Aggregate data by shop, calculating mean/sum for relevant columns
+coffee_agg = (
+    coffee_ratings
+    .group_by(""shop"")
+    .agg(
+        pl.mean(""price"").alias(""price""),
+        pl.mean(""rating"").alias(""rating""),
+        pl.sum(""votes"").alias(""votes""),
+        pl.mean(""wifi_speed"").alias(""wifi_speed"")
+    )
+    .sort(""shop"")
+)
+
+# Create and format the table
+(
+    GT(coffee_agg)
+    .fmt_currency(columns=""price"", currency=""USD"")
+    .data_color(
+        columns=""rating"",
+        palette=[""red"", ""orange"", ""green""],
+        domain=[1, 5]
+    )
+    .fmt_text(
+        columns=""rating"",
+        fn=lambda x: ""★"" * round(x)
+    )
+    .tab_style(
+        style=style.fill(color=""lightblue""),
+        where=loc.body(
+            columns=""rating"",
+            rows=pl.col(""rating"") >= 4
+        )
+    )
+    .tab_style(
+        style=style.text(weight=""bold""),
+        where=loc.body(rows=pl.col(""votes"") > 500)
+    )
+    .tab_footnote(
+        footnote=""Wi-Fi speed is measured in Megabits per second (Mbps)."",
+        where=loc.column_labels(columns=""wifi_speed"")
+    )
+    .cols_label(
+        shop=""Coffee Shop"",
+        price=""Avg. Price"",
+        rating=""Avg. Rating"",
+        votes=""Total Votes"",
+        wifi_speed=""Avg. Wi-Fi Speed""
+    )
+    .tab_header(
+        title=""Coffee Shop Ratings and Amenities""
+    )
+)"
+Example 5,"Using Great Tables, make a table from `ab_test_results.csv` comparing variants. Calculate conversion rate and revenue per user. Show the lift vs Control for each variant. Color the lift column: green if positive, red if negative. Add a summary row showing totals. Format bounce_rate as percentage.
+
+Use .well-known/llms.txt as the API reference.","from great_tables import GT, md, html
+from great_tables import loc, style
+
+# Load the A/B test data
+df = load_data(""ab_test_results.csv"")
+
+# Calculate metrics
+df_summary = df.group_by(""variant"").agg([
+    pl.col(""users"").sum(),
+    pl.col(""conversions"").sum(),
+    pl.col(""revenue"").sum(),
+    pl.col(""bounce_rate"").mean()
+]).with_columns([
+    (pl.col(""conversions"") / pl.col(""users"") * 100).alias(""conversion_rate""),
+    (pl.col(""revenue"") / pl.col(""users"")).alias(""revenue_per_user"")
+])
+
+# Calculate lift vs Control
+control_conv_rate = df_summary.filter(pl.col(""variant"") == ""Control"")[""conversion_rate""][0]
+control_rpu = df_summary.filter(pl.col(""variant"") == ""Control"")[""revenue_per_user""][0]
+
+df_summary = df_summary.with_columns([
+    ((pl.col(""conversion_rate"") - control_conv_rate) / control_conv_rate * 100).alias(""conv_rate_lift""),
+    ((pl.col(""revenue_per_user"") - control_rpu) / control_rpu * 100).alias(""rpu_lift"")
+])
+
+# Create the table
+gt_table = (
+    GT(df_summary)
+    .tab_header(
+        title=""A/B Test Results Comparison"",
+        subtitle=""Performance metrics by variant""
+    )
+    .cols_label(
+        variant=""Variant"",
+        users=""Users"",
+        conversions=""Conversions"",
+        revenue=""Revenue"",
+        bounce_rate=""Bounce Rate"",
+        conversion_rate=""Conversion Rate"",
+        revenue_per_user=""Revenue per User"",
+        conv_rate_lift=""Conv. Rate Lift"",
+        rpu_lift=""RPU Lift""
+    )
+    .fmt_number(columns=[""users"", ""conversions""], decimals=0, use_seps=True)
+    .fmt_currency(columns=[""revenue"", ""revenue_per_user""], currency=""USD"")
+    .fmt_percent(columns=[""bounce_rate"", ""conversion_rate"", ""conv_rate_lift"", ""rpu_lift""], decimals=2, scale_values=False)
+    .data_color(
+        columns=""conv_rate_lift"",
+        palette=[""red"", ""white"", ""green""],
+        domain=[-50, 50]
+    )
+    .data_color(
+        columns=""rpu_lift"",
+        palette=[""red"", ""white"", ""green""],
+        domain=[-50, 50]
+    )
+    .grand_summary_rows(
+        columns=[""users"", ""conversions"", ""revenue""],
+        fns=[""sum""]
+    )
+)
+
+gt_table
+","import pandas as pd
+
+# Load aggregated A/B test results
+ab = load_data(""ab_test_results.csv"")
+
+# Expecting columns: variant, users, conversions, revenue, bounce_rate
+required_cols = {""variant"",""users"",""conversions"",""revenue"",""bounce_rate""}
+missing = required_cols - set(ab.columns)
+if missing:
+    raise ValueError(f""Missing expected columns in ab_test_results.csv: {missing}"")
+
+# Compute per-variant metrics
+ab = ab.with_columns(
+    (pl.col(""conversions"") / pl.col(""users"")).alias(""conversion_rate""),
+    (pl.col(""revenue"") / pl.col(""users"")).alias(""revenue_per_user"")
+)
+
+# Control conversion rate
+control_rate = (
+    ab.filter(pl.col(""variant"") == ""Control"")
+      .select(""conversion_rate"")
+      .item()
+)
+
+# Lift vs Control
+ab = ab.with_columns(
+    (pl.col(""conversion_rate"") - pl.lit(control_rate)).alias(""lift"")
+)
+
+# Summary (weighted metrics)
+summary = (
+    pl.DataFrame({
+        ""variant"": [""Total""],
+        ""users"": [ab[""users""].sum()],
+        ""conversions"": [ab[""conversions""].sum()],
+        ""revenue"": [ab[""revenue""].sum()]
+    })
+    .with_columns(
+        (pl.col(""conversions"") / pl.col(""users"")).alias(""conversion_rate""),
+        (pl.col(""revenue"") / pl.col(""users"")).alias(""revenue_per_user""),
+        pl.lit(0.0).alias(""lift""),
+        # Weighted bounce_rate by users
+        ( (ab[""bounce_rate""] * ab[""users""]).sum() / ab[""users""].sum() ).alias(""bounce_rate"")
+    )
+)
+
+final = pl.concat([ab, summary], how=""vertical"")
+
+# Convert to pandas for styling
+pdf = final.to_pandas()
+
+def style_lift(val):
+    if pd.isna(val):
+        return ''
+    if val > 0:
+        return 'color: green; font-weight: 600;'
+    if val < 0:
+        return 'color: red; font-weight: 600;'
+    return 'color: black;'
+
+styled = (
+    pdf
+      .style
+      .format({
+          ""bounce_rate"": ""{:.1%}"",
+          ""conversion_rate"": ""{:.2%}"",
+          ""revenue_per_user"": ""${:,.2f}"",
+          ""lift"": ""{:+.2%}"",
+          ""revenue"": ""${:,.2f}""
+      })
+      .applymap(style_lift, subset=[""lift""])
+      .set_caption(""A/B Test Variant Performance"")
+)
+
+styled
+","from great_tables import GT, style, loc, exibble, fmt, data_color, summary_rows
+
+# Load the dataset
+df = load_data(""ab_test_results.csv"")
+
+# Aggregate data to get metrics for each variant
+summary_df = (
+    df.group_by(""variant"")
+    .agg(
+        users=pl.count(),
+        conversions=pl.sum(""converted""),
+        revenue=pl.sum(""revenue""),
+        bounce_rate=pl.mean(""bounced""),
+    )
+    .with_columns(
+        conversion_rate=pl.col(""conversions"") / pl.col(""users""),
+        revenue_per_user=pl.col(""revenue"") / pl.col(""users""),
+    )
+    .sort(""variant"")
+)
+
+# Calculate lift against the Control group
+control_metrics = summary_df.filter(pl.col(""variant"") == ""Control"")
+control_cr = control_metrics.select(""conversion_rate"").item()
+control_rpu = control_metrics.select(""revenue_per_user"").item()
+
+summary_df = summary_df.with_columns(
+    cr_lift=(pl.col(""conversion_rate"") - control_cr) / control_cr,
+    rpu_lift=(pl.col(""revenue_per_user"") - control_rpu) / control_rpu,
+).fill_nan(0)
+
+
+# Create and format the table with great_tables
+(
+    GT(summary_df, rowname_col=""variant"")
+    .tab_header(title=""A/B Test Results Comparison"")
+    .cols_label(
+        users=""Users"",
+        conversions=""Conversions"",
+        revenue=""Total Revenue"",
+        bounce_rate=""Bounce Rate"",
+        conversion_rate=""Conversion Rate"",
+        revenue_per_user=""Revenue/User"",
+        cr_lift=""CR Lift vs Control"",
+        rpu_lift=""Rev/User Lift vs Control"",
+    )
+    .fmt_currency(columns=[""revenue"", ""revenue_per_user""])
+    .fmt_percent(columns=[""bounce_rate"", ""conversion_rate"", ""cr_lift"", ""rpu_lift""], decimals=2)
+    .data_color(
+        columns=[""cr_lift"", ""rpu_lift""],
+        palette=[""#F8766D"", ""#00BFC4""], # red, green
+        domain=[-0.1, 0.1]
+    )
+    .summary_rows(
+        groups=None,
+        columns=[""users"", ""conversions"", ""revenue""],
+        fns=[(""Total"", ""sum"")],
+        formatter=fmt.currency
+    )
+    .cols_hide(columns=[""conversions"", ""revenue""])
+    .tab_style(
+        style=style.fill(color=""lightblue""),
+        locations=loc.body(columns=""users"")
+    )
+)"
