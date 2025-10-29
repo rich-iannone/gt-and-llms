@@ -1,0 +1,7 @@
+endpoint,method,avg_ms,p95_ms,p99_ms,requests,errors
+/api/users,GET,45,89,145,125043,12
+/api/posts,GET,32,67,112,89234,3
+/api/auth/login,POST,156,320,578,45678,234
+/api/search,GET,234,456,892,34521,89
+/api/upload,POST,1243,2456,4321,8934,456
+/api/analytics,GET,678,1234,2345,12456,23
