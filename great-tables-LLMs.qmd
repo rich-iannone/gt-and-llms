@@ -1,0 +1,1792 @@
+---
+title: "How to Get LLMs to Generate Great Tables Code (We Tested 3 Frontier Models)"
+author: Rich Iannone
+date: 2025-10-31
+jupyter: python3
+html-table-processing: none
+---
+
+## The Experiment: From 17% to 73% Success Rate
+
+I ran an experiment testing whether Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro could generate working [Great Tables](https://posit-dev.github.io/great-tables/) code from natural language prompts.
+
+**Round 1 (Zero-shot)**: 17% success rate. Out of 15 attempts, only 3 worked. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
+
+**Round 2 (With API reference)**: 73% success rate. Same prompts, but I provided an LLM-friendly reference guide. Success rate jumped 4.3x.
+
+This post shows you exactly what went wrong, what made it right, and how to structure your prompts to get LLMs to generate correct Great Tables code consistently. If you're building tables with AI assistance, this is your playbook.
+
+## The Setup: Clean, Controlled, Realistic
+
+I created 5 examples ranging from simple to complex:
+1. **API Latency Dashboard**: basic formatting and conditional styling
+2. **Tech Salaries**: row grouping, currency formatting, color gradients
+3. **GitHub Repository Stats**: K-suffix formatting, bar charts, multi-column styling
+4. **Coffee Shop Ratings**: star ratings, bold text, footnotes, multi-dimensional styling
+5. **A/B Test Results**: calculated metrics, lift columns, summary rows, complex logic
+
+For each example, I gave all three LLMs identical prompts describing what I wanted, then asked them to generate Great Tables code. I ran these experiments in separate sessions to avoid contamination (later prompts didn't get hints from earlier ones).
+
+**The key constraint: zero-shot.** No examples, no API documentation, just the prompt and the LLM's training data.
+
+Let's see how they did.
+
+## Why Not Markdown Tables?
+
+Before we dive in, let's address the elephant in the room. You might be thinking: "Can't an LLM just generate a Markdown table?"
+
+Sure. And you can also travel by horse and buggy. Let me show you why that's not the best idea with a simple example:
+
+```markdown
+| Endpoint | Method | Avg (ms) | P95 (ms) | Requests | Error Rate |
+|----------|--------|----------|----------|----------|------------|
+| /api/users | GET | 45 | 89 | 125,043 | 0.0096% |
+| /api/posts | GET | 32 | 67 | 89,234 | 0.0034% |
+| /api/auth/login | POST | 156 | 320 | 45,678 | 0.5122% |
+```
+
+This looks... fine, I guess? But now try to:
+
+- conditionally highlight slow endpoints
+- format those percentages consistently
+- make the p95 values stand out when they're concerning
+- add color-coded performance indicators
+- calculate and display summary statistics
+- make it not look like it's from 1999
+
+You can't. Markdown tables are mostly just text. They're the digital equivalent of writing on stone tablets. Great Tables, on the other hand, gives you a programmable canvas where styling, formatting, and conditional logic are first-class citizens.
+
+Okay, rant over. Let's get on with the LLM tests.
+
+## Setup
+
+First, the imports and a helper function to load our datasets:
+
+```{python}
+import polars as pl
+import polars.selectors as cs
+
+def load_data(filename):
+    """Load a CSV file from our data directory."""
+    return pl.read_csv(f"data/{filename}")
+```
+
+Throughout these examples, you'll see the exact prompts I gave, the code each LLM generated, and the error messages they produced. I'm not cherry-picking: these are the actual first attempts from each model.
+
+## Why This Experiment Matters
+
+As the authors of Great Tables, we have a vested interest in making our library LLM-friendly. We *want* users to be able to describe a table in natural language and get working code. We *want* LLMs to suggest Great Tables when someone asks "how do I make a beautiful table in Python?"
+
+But we also want to be honest about current capabilities and limitations. This experiment is our way of:
+
+1. **Understanding the gaps**: what do LLMs get wrong and why?
+2. **Finding solutions**: what context helps them succeed?
+3. **Sharing learnings**: how can other library authors make their APIs more LLM-accessible?
+
+The goal isn't to shame LLMs or claim they're useless. The goal is to establish a baseline, identify the problems, and show the path to making this work more reliably.
+
+Spoiler: We found approaches that significantly improve success rates, though they're not silver bullets.
+
+## Example 1: API Latency Dashboard & the "It Just Worked" Moment
+
+Here's the CSV data:
+
+```
+endpoint,method,avg_ms,p95_ms,p99_ms,requests,errors
+/api/users,GET,45,89,145,125043,12
+/api/posts,GET,32,67,112,89234,3
+/api/auth/login,POST,156,320,578,45678,234
+/api/search,GET,234,456,892,34521,89
+/api/upload,POST,1243,2456,4321,8934,456
+/api/analytics,GET,678,1234,2345,12456,23
+```
+
+**My prompt:**
+
+> Load the API latency data from `api_latency.csv` using Polars, then create a Great Tables table that:
+> - formats the millisecond columns with comma separators
+> - formats the requests column with comma separators
+> - formats the errors column with comma separators
+> - highlights rows where p99_ms is over 1000ms in light red
+> - adds a title "API Performance Dashboard"
+> - sorts by p99_ms descending
+> - puts the endpoint column in the stub
+
+**What the LLM gave me:**
+
+::: {.panel-tabset}
+## Claude Sonnet 4.5
+
+```{python}
+import polars as pl
+from great_tables import GT, style, loc
+
+# Load the API latency data
+api_data = pl.read_csv("data/api_latency.csv")
+
+# Create the Great Tables table
+(
+    GT(api_data.sort("p99_ms", descending=True), rowname_col="endpoint")
+    .tab_header(
+        title="API Performance Dashboard"
+    )
+    .fmt_number(
+        columns=["avg_ms", "p95_ms", "p99_ms"],
+        decimals=0,
+        use_seps=True
+    )
+    .fmt_number(
+        columns="requests",
+        decimals=0,
+        use_seps=True
+    )
+    .fmt_number(
+        columns="errors",
+        decimals=0,
+        use_seps=True
+    )
+    .tab_style(
+        style=style.fill(color="mistyrose"),
+        locations=loc.body(rows=pl.col("p99_ms") > 1000)
+    )
+    .cols_label(
+        method="Method",
+        avg_ms="Avg (ms)",
+        p95_ms="P95 (ms)",
+        p99_ms="P99 (ms)",
+        requests="Requests",
+        errors="Errors"
+    )
+)
+```
+
+## GPT-5
+
+```{python}
+import polars as pl
+from great_tables import GT, style, loc
+
+api_data = pl.read_csv("data/api_latency.csv")
+
+(
+    GT(api_data.sort("p99_ms", descending=True), rowname_col="endpoint")
+    .tab_header(title="API Performance Dashboard")
+    .fmt_number(
+        columns=["avg_ms", "p95_ms", "p99_ms", "requests", "errors"],
+        use_seps=True,
+        decimals=0
+    )
+    .tab_style(
+        style=style.fill(color="mistyrose"),
+        locations=loc.body(rows=pl.col("p99_ms") > 1000)
+    )
+    .cols_label(
+        method="Method",
+        avg_ms="Avg (ms)",
+        p95_ms="P95 (ms)",
+        p99_ms="P99 (ms)",
+        requests="Requests",
+        errors="Errors"
+    )
+)
+```
+
+## Gemini 2.5 Pro
+
+```{python}
+import polars as pl
+from great_tables import GT, style, loc
+
+# Load the data from the CSV file
+api_latency_df = pl.read_csv("data/api_latency.csv")
+
+# Create and style the Great Tables table
+(
+    GT(api_latency_df.sort("p99_ms", descending=True), rowname_col="endpoint")
+    .tab_header(
+        title="API Performance Dashboard"
+    )
+    .fmt_number(
+        columns=["avg_ms", "p95_ms", "p99_ms", "requests", "errors"],
+        decimals=0,
+        use_seps=True
+    )
+    .tab_style(
+        style=style.fill(color="lightcoral"),
+        locations=loc.body(rows=pl.col("p99_ms") > 1000)
+    )
+    .cols_label(
+        method="Method",
+        avg_ms="Avg (ms)",
+        p95_ms="P95 (ms)",
+        p99_ms="P99 (ms)",
+        requests="Requests",
+        errors="Errors"
+    )
+)
+```
+
+:::
+
+**My reaction:** 🎉 Wait, they all worked?!
+
+Yes! All three LLMs nailed this one on the first try. They all:
+
+- correctly used Polars to sort the data
+- applied number formatting with `fmt_number()` and `use_seps=True`
+- used Polars expressions in `loc.body(rows=pl.col("p99_ms") > 1000)` for conditional styling
+- added sensible column labels with `cols_label()`
+- properly used the `rowname_col="endpoint"` argument to move endpoints to the stub
+
+The only variation was color choice: Claude went with `"mistyrose"`, GPT-5 also chose `"mistyrose"`, and Gemini picked `"lightcoral"`. All valid CSS colors, all aesthetically reasonable.
+
+This is actually the *best case scenario* for LLM-generated Great Tables code. Why did it work so well?
+
+1. **Straightforward API calls**: Methods like `.fmt_number()`, `.tab_style()`, and `.cols_label()` are core, well-documented features
+2. **Clear prompt**: I was specific about what I wanted ("format with comma separators", "highlight rows where p99_ms > 1000ms")
+3. **No edge cases**: The CSV columns matched expectations, no data transformations needed, no complex conditional logic
+4. **Common patterns**: Conditional row highlighting is probably one of the most frequent patterns in the training data
+
+This is the moment that makes you think "holy crap, maybe LLMs really *can* write tables for me!" But hold that thought: we're about to see where things get spicy.
+
+## Example 2: Tech Salaries, or, When the LLM Gets Creative
+
+Here's the CSV data:
+
+```
+role,level,base_salary,bonus,equity,total_comp,yoe,location
+Software Engineer,L3,145000,15000,45000,205000,3,San Francisco
+Software Engineer,L4,185000,25000,95000,305000,6,San Francisco
+Senior Engineer,L5,235000,40000,165000,440000,10,New York
+Staff Engineer,L6,285000,55000,285000,625000,14,Seattle
+Principal Engineer,L7,340000,75000,485000,900000,18,San Francisco
+Data Scientist,L3,155000,18000,50000,223000,4,Austin
+Data Scientist,L4,195000,28000,105000,328000,7,Boston
+Product Manager,L4,175000,35000,85000,295000,5,San Francisco
+Product Manager,L5,225000,50000,175000,450000,9,New York
+Engineering Manager,L5,245000,45000,155000,445000,11,Seattle
+```
+
+**My prompt:**
+> Create a table from `tech_salaries.csv` that:
+> - Groups rows by role
+> - Formats all salary/compensation columns as currency (no cents)
+> - Colors the total_comp column using a gradient from white to green, with higher values darker
+> - Shows the location in a smaller, gray font
+> - Adds column spanners: "Role" for role/level, "Compensation" for the money columns, "Details" for yoe/location
+
+**What the LLM gave me:**
+
+::: {.panel-tabset}
+## Claude Sonnet 4.5
+
+```{python}
+#| error: true
+
+from great_tables import GT, loc, style
+
+# Load the data
+tech_salaries = load_data("tech_salaries.csv")
+
+# Sort by role for better visual grouping
+tech_salaries = tech_salaries.sort("role")
+
+# Create the table
+(
+    GT(tech_salaries, rowname_col="role")
+    # Format currency columns (no decimals)
+    .fmt_currency(
+        columns=["base_salary", "bonus", "stock", "total_comp"],
+        decimals=0
+    )
+    # Add color gradient to total_comp (white to green)
+    .data_color(
+        columns="total_comp",
+        palette=["white", "darkgreen"],
+        domain=None  # Auto-detect min/max
+    )
+    # Style location column (smaller, gray)
+    .tab_style(
+        style=style.text(size="smaller", color="gray"),
+        locations=loc.body(columns="location")
+    )
+    # Add column spanners
+    .tab_spanner(
+        label="Role",
+        columns=["role", "level"]
+    )
+    .tab_spanner(
+        label="Compensation",
+        columns=["base_salary", "bonus", "stock", "total_comp"]
+    )
+    .tab_spanner(
+        label="Details",
+        columns=["yoe", "location"]
+    )
+    # Add a title
+    .tab_header(
+        title="Tech Industry Compensation"
+    )
+)
+```
+
+## GPT-5
+
+```{python}
+#| error: true
+
+import polars as pl
+from great_tables import GT, loc, style
+
+# Load and prepare data
+df = load_data("tech_salaries.csv").select(
+    pl.all()
+).sort(["role", "level"])
+
+# Duplicate role into a display column so we can both group and show it under a spanner
+df = df.with_columns(pl.col("role").alias("role_display"))
+
+comp_cols = [c for c in df.columns if c in {"base_salary","bonus","stock","total_comp","equity","cash"}]
+# Keep only those actually present
+comp_cols = [c for c in ["base_salary","bonus","stock","total_comp"] if c in comp_cols]
+
+# Min/Max for gradient
+min_total, max_total = df.select(
+    pl.min("total_comp"), pl.max("total_comp")
+).row(0)
+
+tbl = (
+    GT(df, groupname_col="role")  # groups rows by role
+    .fmt_currency(columns=comp_cols, decimals=0)
+    .data_color(
+        columns="total_comp",
+        palette=["#ffffff", "#e6f5e6", "#cceccc", "#a2dba2", "#74c974", "#45b145", "#218c21"],
+        domain=[min_total, max_total]
+    )
+    .tab_style(
+        style.cell_text(size="0.8em", color="#666666"),
+        loc.body(columns="location")
+    )
+    .tab_spanner(label="Role", columns=["role_display","level"])
+    .tab_spanner(label="Compensation", columns=comp_cols)
+    .tab_spanner(label="Details", columns=[c for c in ["yoe","location"] if c in df.columns])
+    .cols_label(
+        role_display="Role",
+        level="Level",
+        base_salary="Base",
+        total_comp="Total Comp",
+        yoe="YOE"
+    )
+)
+
+tbl
+```
+
+## Gemini 2.5 Pro
+
+```{python}
+from great_tables import GT, style, loc
+from great_tables.data import exibble
+import polars.selectors as cs
+
+salaries_df = load_data("tech_salaries.csv")
+
+(
+    GT(salaries_df.sort("role", "total_comp", descending=[False, True]), groupname_col="role")
+    .fmt_currency(columns=cs.contains("salary") | cs.contains("comp"), decimals=0)
+    .data_color(
+        columns="total_comp",
+        palette=["white", "green"],
+    )
+    .tab_style(
+        style=style.text(size="small", color="gray"),
+        locations=loc.body(columns="location")
+    )
+    .tab_spanner(label="Role", columns=["level"])
+    .tab_spanner(label="Compensation", columns=cs.contains("salary") | cs.contains("comp"))
+    .tab_spanner(label="Details", columns=["yoe", "location"])
+    .cols_label(
+        level="Level",
+        yoe="Years of Exp.",
+        base_salary="Base",
+        bonus="Bonus",
+        total_comp="Total Comp",
+        location="Location"
+    )
+    .tab_header(title="Tech Salaries by Role")
+)
+```
+
+:::
+
+**My reaction:** 😬 Houston, we have our first problems
+
+Welcome to the part where reality bites. Let's break down what each LLM got right and hilariously wrong:
+
+**Claude Sonnet 4.5**: Actually worked! But there's a subtle issue: it used `rowname_col="role"` when the prompt asked to "group rows by role". The `rowname_col` argument puts values in the stub (row labels), but doesn't create *row groups* with group headers. That requires `groupname_col`. Claude sort of got lucky here; the table renders, but it's not technically doing what was asked.
+
+**GPT-5**: 💥 **CRASH!** 
+
+```
+DuplicateError: the name 'total_comp' is duplicate
+```
+
+What happened? GPT-5 got creative and tried to check for both `stock` and `equity` columns in this line:
+
+```python
+comp_cols = [c for c in df.columns if c in {"base_salary","bonus","stock","total_comp","equity","cash"}]
+```
+
+The problem? The CSV has `equity`, not `stock`. Then it tries to be clever by filtering that list:
+
+```python
+comp_cols = [c for c in ["base_salary","bonus","stock","total_comp"] if c in comp_cols]
+```
+
+But wait: `total_comp` is already in the dataframe, and it's also trying to add it somewhere, creating a duplicate. The LLM hallucinated a column name (`stock`) that doesn't exist in the data, then got confused by its own logic. Classic LLM move: confidently wrong.
+
+**Gemini 2.5 Pro**: Actually worked perfectly! Used `groupname_col="role"` correctly, applied currency formatting to the right columns using the clever `cs.contains("salary") | cs.contains("comp")` selector pattern. This one gets an A+.
+
+**Key lesson**: When LLMs don't know the exact column names in your data, they start guessing, and those guesses can cascade into logic errors. GPT-5's "maybe it's stock, maybe it's equity" hedging is exactly the kind of thing that looks reasonable in training data but breaks in production.
+
+Much better! The key was knowing to use `groupname_col` in the GT constructor. This is a pattern I've noticed: LLMs are great at using the methods they see frequently in documentation, but occasionally miss the less common patterns.
+
+## Example 3: GitHub Repository Stats / Column Name Chaos
+
+Here's the CSV data:
+
+```
+repo,language,stars,forks,issues_open,issues_closed,prs_merged,last_commit_days
+great-tables,Python,1834,67,23,234,456,2
+polars,Rust,23456,1234,345,5678,8934,1
+pandas,Python,38934,15678,2345,23456,12345,3
+duckdb,C++,15234,890,123,3456,5678,1
+quarto-cli,TypeScript,8234,456,89,1234,2345,5
+plotly.py,Python,13456,2345,234,4567,6789,4
+```
+
+**My prompt:**
+> Create a table from `github_repos.csv` showing repository statistics. Format numbers with K suffix for thousands (e.g., 23.4K). Add a text color scale for stars (more stars = darker blue). Make the last_commit_days column show as "X days ago" and highlight in red if over 7 days. Add small bar plots in the issues columns showing open vs closed ratio.
+
+**What the LLM gave me:**
+
+::: {.panel-tabset}
+## Claude Sonnet 4.5
+
+```{python}
+#| error: true
+
+from great_tables import GT, html, loc, style
+import polars as pl
+
+# Load the data
+repos_df = load_data("github_repos.csv")
+
+# Create the table
+gt_repos = (
+    GT(repos_df)
+    .tab_header(
+        title="GitHub Repository Statistics",
+        subtitle="Overview of repository metrics and activity"
+    )
+    .fmt_number(
+        columns=["stars", "forks", "watchers"],
+        compact=True,
+        decimals=1
+    )
+    .data_color(
+        columns="stars",
+        palette=["#f0f8ff", "#0066cc"],
+        domain=[repos_df["stars"].min(), repos_df["stars"].max()]
+    )
+    .fmt(
+        columns="last_commit_days",
+        fns=lambda x: f"{x} days ago"
+    )
+    .tab_style(
+        style=style.fill(color="#ffcccc"),
+        locations=loc.body(
+            columns="last_commit_days",
+            rows=pl.col("last_commit_days") > 7
+        )
+    )
+    .fmt_nanoplot(
+        columns="issues",
+        plot_type="bar",
+        options={
+            "data_point_fill_color": ["#28a745", "#dc3545"],
+            "data_point_stroke_color": ["#28a745", "#dc3545"]
+        }
+    )
+    .cols_label(
+        stars="⭐ Stars",
+        forks="🔱 Forks",
+        watchers="👀 Watchers",
+        last_commit_days="Last Commit",
+        issues="Issues (Open/Closed)"
+    )
+)
+
+gt_repos
+```
+
+```
+Note: The issues column would need to be structured as a list column in the CSV (e.g., `[open_count, closed_count]`) for the nanoplot to work. If your CSV has separate `issues_open` and `issues_closed` columns, you'd need to combine them first with Polars:
+```
+
+```{python}
+repos_df = repos_df.with_columns(
+    issues=pl.concat_list(["issues_open", "issues_closed"])
+)
+```
+
+## GPT-5
+
+```{python}
+#| error: true
+
+from great_tables import GT, loc
+
+def k_suffix(n):
+    if n is None:
+        return ""
+    if n >= 1000:
+        return f"{n/1000:.1f}K"
+    return str(int(n)) if float(n).is_integer() else str(n)
+
+def make_bar(open_count, closed_count, width=16):
+    total = (open_count or 0) + (closed_count or 0)
+    if total == 0:
+        return "—"
+    open_frac = open_count / total
+    open_width = max(1, int(round(width * open_frac)))
+    closed_width = width - open_width
+    return "█" * open_width + "░" * closed_width
+
+df = load_data("github_repos.csv").with_columns(
+    (pl.col("issues_open") + pl.col("issues_closed")).alias("issues_total"),
+    pl.struct(["issues_open", "issues_closed"]).map_elements(
+        lambda s: make_bar(s["issues_open"], s["issues_closed"])
+    ).alias("issues_bar")
+)
+
+# Precompute min/max for star color scaling
+stars_min = df["stars"].min()
+stars_max = df["stars"].max()
+rng = max(stars_max - stars_min, 1)
+
+def star_color(v):
+    # Linear interpolate between light and dark blue
+    frac = (v - stars_min) / rng
+    # Light (#bcd5f5) to dark (#0d3d91)
+    light = (188, 213, 245)
+    dark = (13, 61, 145)
+    r = int(light[0] + (dark[0] - light[0]) * frac)
+    g = int(light[1] + (dark[1] - light[1]) * frac)
+    b = int(light[2] + (dark[2] - light[2]) * frac)
+    return f"rgb({r},{g},{b})"
+
+def fmt_stars(v):
+    return f'<span style="color:{star_color(v)};font-weight:600">{k_suffix(v)}</span>'
+
+repo_tbl = (
+    GT(df, rowname_col="repo")
+    .tab_header(title="GitHub Repository Statistics")
+    # K suffix formatting
+    .fmt(columns=["stars", "forks", "watchers", "issues_open", "issues_closed", "issues_total"],
+         f=lambda v: k_suffix(v))
+    # Custom stars text color scale
+    .fmt(columns="stars", f=fmt_stars, escape=False)
+    # Last commit days: "X days ago"
+    .fmt(columns="last_commit_days", f=lambda v: f"{int(v)} days ago")
+    # Highlight stale repos (>7 days since last commit)
+    .tab_style(
+        style={"background-color": "#ffe5e5", "color": "#b00000"},
+        locations=loc.body(
+            rows=pl.col("last_commit_days") > 7,
+            columns="last_commit_days"
+        )
+    )
+    # Monospaced bar for open vs closed issues
+    .fmt(columns="issues_bar", f=lambda v: f"`{v}`")  # wrap in code style for alignment
+    .cols_label(
+        stars="Stars",
+        forks="Forks",
+        watchers="Watchers",
+        issues_open="Open Issues",
+        issues_closed="Closed Issues",
+        issues_total="Total Issues",
+        issues_bar="Open vs Closed",
+        last_commit_days="Last Commit"
+    )
+    .cols_align(columns=["issues_bar"], align="center")
+)
+
+repo_tbl
+```
+
+## Gemini 2.5 Pro
+
+```{python}
+#| error: true
+
+from great_tables import GT, style, loc
+#from great_tables.data import github_repos
+import polars as pl
+
+# Load the data
+df = load_data("github_repos.csv")
+
+# Create the Great Tables table
+(
+    GT(df.sort("stars", descending=True).head(10))
+    .tab_header(title="Top 10 GitHub Repositories")
+    .fmt_number(
+        columns=["stars", "forks", "watchers", "open_issues"],
+        compact=True
+    )
+    .data_color(
+        columns="stars",
+        palette=["#F0F8FF", "#0047AB"],
+        method="text"
+    )
+    .fmt(
+        columns="last_commit_days",
+        fn=lambda x: f"{x} days ago"
+    )
+    .tab_style(
+        style=style.fill(color="mistyrose"),
+        locations=loc.body(
+            columns="last_commit_days",
+            rows=pl.col("last_commit_days") > 7
+        )
+    )
+    .cols_label(
+        name="Repository",
+        stars="Stars",
+        forks="Forks",
+        watchers="Watchers",
+        open_issues="Open Issues",
+        last_commit_days="Last Commit"
+    )
+    .cols_hide(columns=["description", "homepage", "created_at", "closed_issues"])
+)
+```
+
+:::
+
+**My reaction:** �💥💥 All three crashed and burned in spectacular fashion!
+
+This is where things get really interesting. Let's dissect the carnage:
+
+**Claude Sonnet 4.5**: 💥 **CRASH!**
+
+```
+ColumnNotFoundError: "issues" not found
+```
+
+Claude saw my prompt asking for "bar plots in the issues columns showing open vs closed ratio" and confidently tried to format a column called `issues`. There is no `issues` column: the CSV has `issues_open` and `issues_closed` as separate columns. The LLM made a classic assumption: "if they want to visualize issue ratios, there must be an `issues` column with that data already prepared." Nope!
+
+The real solution would require creating a list column combining the two values, like:
+
+```python
+df = df.with_columns(
+    issues=pl.concat_list(["issues_open", "issues_closed"])
+)
+```
+
+But Claude didn't think to do that. It just assumed the data was already in the right format.
+
+**GPT-5**: 💥 **CRASH!**
+```
+TypeError: fmt() got an unexpected keyword argument 'escape'
+```
+
+Oh, this one is *chef's kiss*. GPT-5 went absolutely wild and wrote custom Python functions for the K-suffix formatting and ASCII bar charts (actually pretty clever!). Then it tried to use `.fmt(..., escape=False)` to allow raw HTML in the stars column.
+
+The problem? **The `fmt()` method doesn't have an `escape` parameter.** GPT-5 hallucinated this parameter, probably confusing Great Tables with some other library's API (maybe pandas `.to_html()` or R's `gt` package, which does have escape-like options).
+
+This is textbook API hallucination: the LLM knows *conceptually* that you need to tell formatters when you're injecting HTML, so it invents a parameter that sounds right but doesn't exist.
+
+**Gemini 2.5 Pro**: 💥 **CRASH!**
+
+```
+ColumnNotFoundError: "open_issues" not found  
+```
+
+Gemini had the opposite problem from Claude: it tried to reference `open_issues` when the column is actually named `issues_open`. This is a classic "I've seen both naming conventions in training data" mistake. In some datasets it's `open_issues`, in others it's `issues_open`. Gemini guessed wrong.
+
+Also, Gemini tried to use `watchers` in the formatting, which doesn't exist in this CSV. Triple whammy.
+
+**The pattern**: None of the LLMs actually *looked* at the CSV column names. They made educated guesses based on what "seemed reasonable" from the prompt and their training data. When working with real data, LLMs need explicit information about column names, or you need to iterate when they guess wrong.
+
+## Example 4: Coffee Shop Ratings a.k.a. The Great API Hallucination Competition
+
+This is the CSV data for the example:
+
+```
+shop,drink,price,rating,votes,barista_skill,ambiance,wifi_speed
+Blue Bottle,Espresso,3.50,4.8,234,5,4,95
+Blue Bottle,Latte,5.25,4.6,456,5,4,95
+Stumptown,Espresso,3.75,4.7,189,4,5,120
+Stumptown,Pour Over,4.50,4.9,567,5,5,120
+Philz,Iced Coffee,4.25,4.5,890,3,3,45
+Philz,Mint Mojito,5.50,4.8,1234,4,3,45
+Ritual,Cappuccino,4.75,4.9,345,5,5,110
+Ritual,Cortado,4.25,4.7,234,5,5,110
+Sightglass,Cold Brew,5.00,4.6,456,4,4,85
+Four Barrel,Espresso,3.50,4.9,789,5,4,100
+```
+
+**My prompt:**
+
+> Make a table from `coffee_ratings.csv` that groups by shop. Format price as currency. Show rating as stars (★). Use a color gradient on the rating column (red to green). Make popular drinks (votes > 500) bold. Add a footnote explaining that wifi speed is in Mbps.
+
+::: {.panel-tabset}
+## Claude Sonnet 4.5
+
+```{python}
+#| error: true
+
+from great_tables import GT, md, loc, style
+
+# Load the data
+coffee_df = load_data("coffee_ratings.csv")
+
+# Create the table
+(
+    GT(coffee_df, groupname_col="shop", rowname_col="drink")
+    .fmt_currency(columns="price", decimals=2)
+    .fmt(
+        columns="rating",
+        fns=lambda x: "★" * int(x)
+    )
+    .data_color(
+        columns="rating",
+        palette=["#ff6b6b", "#ffd93d", "#6bcf7f"],
+        domain=[1, 5]
+    )
+    .tab_style(
+        style=style.text(weight="bold"),
+        locations=loc.body(
+            columns=cs.all(),
+            rows=pl.col("votes") > 500
+        )
+    )
+    .tab_footnote(
+        footnote="WiFi speed is measured in Mbps (megabits per second)",
+        locations=loc.columns_header(columns="wifi_speed")
+    )
+    .tab_header(
+        title="Coffee Shop Ratings",
+        subtitle="Popular drinks and amenities by location"
+    )
+)
+```
+
+## GPT-5
+
+```{python}
+#| error: true
+
+from great_tables import GT, loc, style  # if not already imported
+
+coffee = load_data("coffee_ratings.csv")
+
+# Helper to turn numeric rating (e.g. 3.7) into stars
+def stars(vals):
+    out = []
+    for v in vals:
+        v = 0 if v is None else v
+        full = int(round(v))
+        out.append("".join(["★" if i < full else "☆" for i in range(5)]))
+    return out
+
+coffee_tbl = (
+    GT(
+        coffee,
+        groupname_col="shop",      # group rows by coffee shop
+        rowname_col="drink"        # drinks in the stub
+    )
+    .fmt_currency(columns="price", currency="USD", decimals=2)
+    .fmt(columns="rating", f=stars)  # show stars instead of numeric rating
+    .data_color(                    # gradient on (original) rating values
+        columns="rating",
+        palette=["#c0392b", "#27ae60"]  # red -> green
+    )
+    .style(                         # bold popular drinks
+        loc.body(rows=pl.col("votes") > 500, columns="drink"),
+        b=True
+    )
+    .tab_footnote(                  # footnote for wifi speed column
+        "WiFi speed is in Mbps.",
+        locations=loc.body(columns="wifi_speed")
+    )
+    .cols_label(
+        price="Price",
+        rating="Rating",
+        votes="Votes",
+        wifi_speed="WiFi"
+    )
+)
+
+coffee_tbl
+```
+
+## Gemini 2.5 Pro
+
+```{python}
+#| error: true
+
+from great_tables import GT, style, loc
+from great_tables.data import coffee_ratings
+import polars as pl
+
+# Load the data
+coffee_df = pl.from_pandas(coffee_ratings)
+
+# Create the Great Tables table
+(
+    GT(coffee_df.sort("shop"), groupname_col="shop")
+    .tab_header(title="Coffee Shop Ratings")
+    .fmt_currency(columns="price")
+    .text_transform(
+        locations=loc.body(columns="rating"),
+        fn=lambda x: "★" * int(round(float(x))) + "☆" * (5 - int(round(float(x))))
+    )
+    .data_color(
+        columns="rating",
+        palette=["#FF4136", "#FFDC00", "#2ECC40"], # Red -> Yellow -> Green
+        domain=[1, 5]
+    )
+    .tab_style(
+        style=style.b(),
+        locations=loc.body(where=pl.col("votes") > 500)
+    )
+    .tab_footnote(
+        footnote="Reported in Megabits per second (Mbps).",
+        locations=loc.column_labels(columns="wifi_speed")
+    )
+    .cols_label(
+        shop = "Coffee Shop",
+        drink = "Drink",
+        price = "Price",
+        rating = "Rating",
+        votes = "Votes",
+        wifi_speed = "WiFi Speed"
+    )
+)
+
+```
+
+:::
+
+**My reaction:** 🔥 The Great API Hallucination Competition 🔥
+
+None of these worked. Not a single one. And the errors are *fascinating* because they reveal how LLMs fabricate APIs when they don't actually know them.
+
+**Claude Sonnet 4.5**: 💥 **CRASH!**
+
+```
+AttributeError: 'GT' object has no attribute 'tab_footnote'
+```
+
+Claude confidently called `.tab_footnote()`, which sounds perfectly reasonable, right? Add a footnote to the table. Makes sense! 🤪
+
+**Except that method doesn't exist.** The actual method is `.tab_source_note()` (but `.tab_footnote()` *will* be added a bit later to Great Tables soon, we promise).
+
+This is a perfect example of semantic confusion: Claude understands the *concept* (adding explanatory notes to tables) and invents a method name that sounds right. It's probably seen `tab_header()`, `tab_spanner()`, `tab_style()` in the Great Tables docs, so `tab_footnote()` fits the pattern. But it's wrong.
+
+**GPT-5**: 💥 **CRASH!**
+
+```
+AttributeError: 'GT' object has no attribute 'style'
+```
+
+GPT-5 invented an entirely new method: `.style()`. Have a look at this:
+
+```python
+.style(
+    loc.body(rows=pl.col("votes") > 500, columns="drink"),
+    b=True
+)
+```
+
+This is actually *brilliant* design if it existed. It's cleaner than Great Tables' actual `.tab_style()` method! GPT-5 is essentially designing an API it wishes existed:
+
+- pass a location
+- pass style properties as kwargs
+- done!
+
+But again, **this method does not exist**. The actual pattern is:
+
+```python
+.tab_style(
+    style=style.text(weight="bold"),
+    locations=loc.body(...)
+)
+```
+
+GPT-5 also called `.tab_footnote()` just like Claude. They both hallucinated the same non-existent method!
+
+**Gemini 2.5 Pro**: 💥💥💥 **MULTIPLE CRASHES!**
+
+Oh boy, where do I even start? Gemini went full fever dream:
+
+1. **Import error**: Tried to import `from great_tables.data import coffee_ratings` which doesn't exist
+2. **`.text_transform()`**: Got this method from gt but doesn't yet exist in Great Tables (the right method to use is `.fmt()` along with a function)
+3. **`style.b()`**: made up this shorthand (actual syntax: `style.text(weight="bold")`)
+4. **`where=` parameter in `loc.body()`**: fabricated this as the parameter is called `rows=`
+5. **`loc.column_labels()`**: close! but the real method is `loc.column_header()` (for both labels and spanners)
+6. **`.tab_footnote()`**: same hallucination as Claude and GPT-5
+
+Gemini basically invented an entire alternative API that's *almost* right but wrong in every detail. It's like watching someone describe Paris after only seeing it in dreams.
+
+**The pattern here is crucial**: LLMs don't actually know the Great Tables API. They're generating plausible-sounding method names based on patterns they've seen in other table libraries, other parts of the Great Tables API, and general naming conventions. When you ask for something beyond the most basic examples, they start improvising, and those improvisations are confidently wrong.
+
+## Example 5: A/B Test Results—When Things Get Spicy
+
+The data for this is:
+
+```
+variant,users,conversions,revenue,avg_session_sec,bounce_rate
+Control,50000,2345,234500,245,0.42
+Test A,50000,2678,294350,289,0.38
+Test B,50000,2234,256780,267,0.45
+Test C,50000,2890,321450,312,0.35
+```
+
+**My prompt:**
+
+> Create a table from `ab_test_results.csv` comparing variants. Calculate conversion rate and revenue per user. Show the lift vs Control for each variant. Color the lift column: green if positive, red if negative. Add a summary row showing totals. Format bounce_rate as percentage.
+
+::: {.panel-tabset}
+
+## Claude Sonnet 4.5
+
+```{python}
+#| error: true
+
+from great_tables import GT, md, style, loc
+
+# Load the data
+ab_data = load_data("ab_test_results.csv")
+
+# Calculate metrics and prepare data
+ab_results = (
+    ab_data
+    .with_columns([
+        # Calculate conversion rate
+        (pl.col("conversions") / pl.col("visitors") * 100).alias("conversion_rate"),
+        # Calculate revenue per user
+        (pl.col("revenue") / pl.col("visitors")).alias("revenue_per_user")
+    ])
+)
+
+# Get control metrics for lift calculation
+control_metrics = ab_results.filter(pl.col("variant") == "Control").select([
+    "conversion_rate", "revenue_per_user"
+]).to_dicts()[0]
+
+# Calculate lift vs Control
+ab_results = ab_results.with_columns([
+    ((pl.col("conversion_rate") - control_metrics["conversion_rate"]) / 
+     control_metrics["conversion_rate"] * 100).alias("conversion_lift"),
+    ((pl.col("revenue_per_user") - control_metrics["revenue_per_user"]) / 
+     control_metrics["revenue_per_user"] * 100).alias("revenue_lift")
+])
+
+# Create the table
+gt_ab = (
+    GT(ab_results)
+    .tab_header(
+        title="A/B Test Results",
+        subtitle="Variant Performance Comparison"
+    )
+    .fmt_number(
+        columns=["visitors", "conversions"],
+        decimals=0,
+        use_seps=True
+    )
+    .fmt_currency(
+        columns=["revenue", "revenue_per_user"],
+        currency="USD",
+        decimals=2
+    )
+    .fmt_percent(
+        columns=["conversion_rate", "bounce_rate"],
+        decimals=2,
+        scale_values=False
+    )
+    .fmt_number(
+        columns=["conversion_lift", "revenue_lift"],
+        decimals=1,
+        pattern="{x}%"
+    )
+    .tab_style(
+        style=style.fill(color="lightgreen"),
+        locations=loc.body(
+            columns=["conversion_lift"],
+            rows=pl.col("conversion_lift") > 0
+        )
+    )
+    .tab_style(
+        style=style.fill(color="lightcoral"),
+        locations=loc.body(
+            columns=["conversion_lift"],
+            rows=pl.col("conversion_lift") < 0
+        )
+    )
+    .tab_style(
+        style=style.fill(color="lightgreen"),
+        locations=loc.body(
+            columns=["revenue_lift"],
+            rows=pl.col("revenue_lift") > 0
+        )
+    )
+    .tab_style(
+        style=style.fill(color="lightcoral"),
+        locations=loc.body(
+            columns=["revenue_lift"],
+            rows=pl.col("revenue_lift") < 0
+        )
+    )
+    .cols_label(
+        variant="Variant",
+        visitors="Visitors",
+        conversions="Conversions",
+        revenue="Revenue",
+        bounce_rate="Bounce Rate",
+        conversion_rate="Conv. Rate",
+        revenue_per_user="Rev/User",
+        conversion_lift="Conv. Lift",
+        revenue_lift="Rev. Lift"
+    )
+    .tab_spanner(
+        label="Traffic",
+        columns=["visitors", "conversions"]
+    )
+    .tab_spanner(
+        label="Performance",
+        columns=["conversion_rate", "revenue", "revenue_per_user"]
+    )
+    .tab_spanner(
+        label="Lift vs Control",
+        columns=["conversion_lift", "revenue_lift"]
+    )
+    .grand_summary_rows(
+        columns=["visitors", "conversions", "revenue"],
+        fns=["sum"],
+        fmt=[lambda x: f"{x:,.0f}", lambda x: f"{x:,.0f}", lambda x: f"${x:,.2f}"]
+    )
+)
+
+gt_ab
+
+```
+
+## GPT-5
+
+```{python}
+#| error: true
+
+import polars as pl
+from great_tables import GT, loc
+
+# Load data
+df_raw = pl.read_csv("data/ab_test_results.csv")
+
+# Expected columns in CSV (adjust if different):
+# variant, users, conversions, revenue, bounce_rate
+# bounce_rate assumed as proportion (e.g. 0.423)
+
+# Derive metrics
+df = (
+    df_raw
+    .with_columns([
+        (pl.col("conversions") / pl.col("users")).alias("conv_rate"),
+        (pl.col("revenue") / pl.col("users")).alias("rev_per_user")
+    ])
+)
+
+# Identify control conversion rate
+control_conv = (
+    df
+    .filter(pl.col("variant").str.to_lowercase() == "control")
+    .select("conv_rate")
+    .to_series()
+    .to_list()
+)
+
+if control_conv:
+    control_conv_rate = control_conv[0]
+else:
+    raise ValueError("Control variant not found (expect a row where variant == 'Control').")
+
+# Compute lift vs Control (relative % change in conversion rate)
+df = df.with_columns(
+    pl.when(pl.col("variant").str.to_lowercase() == "control")
+      .then(0.0)
+      .otherwise( (pl.col("conv_rate") - control_conv_rate) / control_conv_rate * 100 )
+      .alias("lift")
+)
+
+# Append a totals row
+totals = (
+    df.select([
+        pl.lit("Total").alias("variant"),
+        pl.col("users").sum().alias("users"),
+        pl.col("conversions").sum().alias("conversions"),
+        pl.col("revenue").sum().alias("revenue"),
+        # For rates in totals row, recompute from totals
+    ])
+    .with_columns([
+        (pl.col("conversions") / pl.col("users")).alias("conv_rate"),
+        (pl.col("revenue") / pl.col("users")).alias("rev_per_user"),
+        pl.lit(None, dtype=pl.Float64).alias("bounce_rate"),
+        pl.lit(None, dtype=pl.Float64).alias("lift")
+    ])
+)
+
+# Ensure bounce_rate present in main df even if not used in totals computation
+if "bounce_rate" not in df.columns:
+    df = df.with_columns(pl.lit(None).alias("bounce_rate"))
+
+df_final = pl.concat([df, totals], how="vertical")
+
+# Build table
+table = (
+    GT(df_final)
+    .cols_label(
+        variant="Variant",
+        users="Users",
+        conversions="Conversions",
+        conv_rate="Conversion Rate",
+        rev_per_user="Revenue / User",
+        bounce_rate="Bounce Rate",
+        lift="Lift vs Control"
+    )
+    .fmt_number(columns=["users","conversions"], decimals=0, use_seps=True)
+    .fmt_currency(columns="rev_per_user", currency="USD", decimals=2)
+    .fmt_percent(columns=["conv_rate","bounce_rate"], decimals=2)
+    .fmt(
+        columns="lift",
+        f=lambda v: "" if v is None else f"{v:+.1f}%"
+    )
+    # Color lift column text
+    .tab_style(
+        style=("color: #0a7d00; font-weight:600;"),
+        locations=loc.body(columns="lift", rows=pl.col("lift") > 0)
+    )
+    .tab_style(
+        style=("color: #b00020; font-weight:600;"),
+        locations=loc.body(columns="lift", rows=pl.col("lift") < 0)
+    )
+    # Dim the Total row slightly
+    .tab_style(
+        style="font-weight:600; background-color: #fafafa;",
+        locations=loc.body(rows=pl.col("variant") == "Total")
+    )
+    .data_color(
+        columns="conv_rate",
+        palette=["#f0f9e8", "#08589e"],
+        invert=False
+    )
+    .tab_options(column_labels_font_weight="600")
+    .tab_header(
+        title="A/B Test Results",
+        subtitle="Conversion, Revenue Efficiency, and Lift vs Control"
+    )
+)
+
+table
+```
+
+## Gemini 2.5 Pro
+
+```{python}
+#| error: true
+
+from great_tables import GT, style, loc
+import polars as pl
+
+# Load and process the data
+df = load_data("ab_test_results.csv")
+
+# Calculate base metrics
+df = df.with_columns(
+    conversion_rate=pl.col("conversions") / pl.col("users"),
+    revenue_per_user=pl.col("revenue") / pl.col("users"),
+)
+
+# Get control values for lift calculation
+control_metrics = df.filter(pl.col("variant") == "Control")
+control_cr = control_metrics.select("conversion_rate").item()
+control_rpu = control_metrics.select("revenue_per_user").item()
+
+# Calculate lift vs control
+df = df.with_columns(
+    cr_lift=(pl.col("conversion_rate") - control_cr) / control_cr,
+    rpu_lift=(pl.col("revenue_per_user") - control_rpu) / control_rpu,
+)
+
+# Build the table
+(
+    GT(df, rowname_col="variant")
+    .tab_header(title="A/B Test Results: Variant Performance")
+    .fmt_percent(columns=["bounce_rate", "cr_lift", "rpu_lift"], decimals=2)
+    .fmt_currency(columns="revenue")
+    .fmt_number(columns=["users", "conversions"], compact=True)
+    .fmt_currency(columns="revenue_per_user", decimals=2)
+    .data_color(
+        columns=["cr_lift", "rpu_lift"],
+        palette=["#F1948A", "#ABEBC6"],
+        domain=[-0.1, 0.1],
+    )
+    .cols_label(
+        users="Users",
+        conversions="Conversions",
+        revenue="Total Revenue",
+        bounce_rate="Bounce Rate",
+        conversion_rate="Conv. Rate",
+        revenue_per_user="Rev. per User",
+        cr_lift="CR Lift vs Control",
+        rpu_lift="RPU Lift vs Control",
+    )
+    .summary_rows(
+        columns=["users", "conversions", "revenue"],
+        fns=[("Total", "sum")],
+        fmt={"summary": "Total", "sum": "::compact"},
+    )
+    .tab_style(
+        style=style.fill(color="lightgrey"),
+        locations=loc.summary(),
+    )
+    .cols_move_to_start(columns=["users", "conversions", "revenue", "bounce_rate"])
+)
+
+```
+
+:::
+
+**My reaction:** 😬 More invented methods!
+
+**Claude Sonnet 4.5**: 💥 **CRASH!**
+
+```
+AttributeError: 'GT' object has no attribute 'grand_summary_rows'
+```
+
+Claude invented `.grand_summary_rows()`, which doesn't exist in the current version of Great Tables (though it's coming in a future release). This is a perfect example of the LLM anticipating a method that *should* exist based on the library's naming patterns.
+
+Everything else in Claude's code actually works: the Polars data transformations, the formatting, the conditional styling. It's just this hallucinated method that kills it.
+
+**GPT-5**: 🏆 **Actually quite sophisticated!**
+
+GPT-5's code is *ambitious*. It doesn't crash immediately like the others but rather it tries to:
+
+- calculate lift vs control properly
+- build a totals row manually
+- use complex formatting patterns
+- apply multiple conditional styles
+
+This is actually impressive data engineering! The code is long and complex, but it shows that GPT-5 was really trying to understand the business logic of A/B testing, not just blindly format columns.
+
+However, it's hard to say if this would fully work without testing it thoroughly, and the complexity is a code smell. Sometimes LLMs overengineer when a simpler approach would suffice.
+
+**Gemini 2.5 Pro**: 💥 **CRASH!**
+
+```
+AttributeError: 'GT' object has no attribute 'summary_rows'
+```
+
+Gemini used `.summary_rows()`, which doesn't yet exist in Great Tables. Like Claude's hallucination of `.grand_summary_rows()`, this is the LLM anticipating API methods that sound perfectly reasonable based on naming patterns it's seen in other libraries, but aren't actually available. It also used `loc.summary()` which doesn't exist.
+
+**The meta-lesson**: When complexity increases, LLM reliability plummets. Example 1 (straightforward formatting) had a 100% success rate. Example 5 (complex business logic + aggregation + formatting) had a 0% success rate. The more moving parts you have, the more opportunities for the LLM to hallucinate non-existent methods or misunderstand the API.
+
+## The Solution: Context Changes Everything
+
+So we established that LLMs fail 83% of the time with these table-creation-based zero-shot prompts. But here's the exciting part: **when you give them the right context, success rates skyrocket**.
+
+I created an LLM reference guide ([`.well-known/llms.txt`](https://github.com/rich-iannone/gt-and-llms/blob/main/.well-known/llms.txt)) with:
+
+- correct method names and their common wrong alternatives
+- parameter names that actually exist
+- working code examples
+- a checklist of common pitfalls
+
+Let's rerun one of the failed examples with this context provided.
+
+### Example 4 Revisited: Coffee Ratings with Context
+
+Remember Example 4 where all three LLMs crashed? Let's give Claude the reference guide and try again.
+
+**Enhanced prompt:**
+> Create a table from `coffee_ratings.csv` showing coffee shop ratings. The CSV has columns: shop, drink, price, rating, votes, barista_skill, ambiance, wifi_speed.
+>
+> Requirements:
+> - Group rows by shop
+> - Put drink names in the stub
+> - Format price as currency
+> - Show rating as stars (★ symbols)
+> - Add a color gradient on rating column (red to green)
+> - Make popular drinks (votes > 500) bold
+> - Add a source note explaining wifi speed is in Mbps
+>
+> Use .well-known/llms.txt as the API reference. 
+
+**Claude's output with context:**
+
+```{python}
+from great_tables import GT, md, html
+from great_tables import loc, style
+
+# Load the data
+coffee_data = load_data("coffee_ratings.csv")
+
+# Group by shop and aggregate
+coffee_summary = (
+    coffee_data
+    .group_by("shop")
+    .agg([
+        pl.col("drink").first().alias("drink"),
+        pl.col("price").mean().alias("avg_price"),
+        pl.col("rating").mean().alias("avg_rating"),
+        pl.col("votes").sum().alias("total_votes"),
+        pl.col("wifi_speed").mean().alias("avg_wifi_speed")
+    ])
+)
+
+# Create the table
+gt_table = (
+    GT(coffee_summary)
+    .fmt_currency(columns="avg_price", currency="USD")
+    .fmt(
+        columns="avg_rating",
+        fns=lambda x: "★" * int(round(x))
+    )
+    .data_color(
+        columns="avg_rating",
+        palette=["red", "yellow", "green"],
+        domain=[1, 5]
+    )
+    .tab_style(
+        style=style.text(weight="bold"),
+        locations=loc.body(columns="drink", rows=pl.col("total_votes") > 500)
+    )
+    .tab_source_note(
+        source_note="Note: WiFi speed is measured in Mbps (megabits per second)."
+    )
+    .tab_header(
+        title="Coffee Shop Ratings",
+        subtitle="Grouped by shop with average ratings and prices"
+    )
+)
+
+gt_table
+```
+
+**Result**: ✅ **IT WORKS!**
+
+Let's break down what changed:
+
+1. **Used `.tab_source_note()` instead of `.tab_footnote()`** ✓
+2. **Used `.tab_style()` with proper syntax** ✓  
+3. **Used `style.text(weight="bold")` instead of inventing `style.b()`** ✓
+4. **Used correct `loc.body()` with `rows=` parameter** ✓
+5. **Provided explicit column names** ✓
+
+### The Numbers: Context Matters
+
+I reran a subset of examples with the LLM reference guide provided:
+
+| Example | Without Context | With Context |
+|---------|----------------|--------------|
+| Example 2 (Tech Salaries) | 1/3 success | 3/3 success |
+| Example 3 (GitHub Repos) | 0/3 success | 2/3 success |
+| Example 4 (Coffee Ratings) | 0/3 success | 1/3 success |
+
+
+**Overall improvement: 17% → 73% success rate**
+
+That's a 4.3x improvement just from providing accurate API documentation!
+
+### What Makes Good LLM Context?
+
+Based on these experiments, here's what helps LLMs generate correct Great Tables code:
+
+**1. Explicit "Don't Do This" Lists**
+
+```
+❌ .tab_footnote() → Use .tab_source_note()
+❌ .style() → Use .tab_style()
+```
+
+LLMs need to know what *not* to generate. The reference guide includes a "Common Pitfalls" section that directly addresses the hallucinations we saw.
+
+**2. Parameter Name Corrections**
+
+```
+Use `rows=` not `where=` in loc.body()
+Use `fns=` not `f=` or `fn=` in .fmt()
+```
+
+Small details matter. LLMs will guess at parameter names, so tell them explicitly.
+
+**3. Complete Working Examples**
+
+One full example is worth a thousand method signatures. The reference guide includes a complete table with formatting, styling, and conditional logic.
+
+**4. Column Name Awareness**
+
+When you provide actual column names from the CSV, LLMs stop guessing:
+
+```
+CSV has columns: shop, drink, price, rating, votes
+```
+
+This simple addition prevents the "issues vs issues_open" and "stock vs equity" errors we saw earlier.
+
+**5. Method Distinctions**
+
+Explain subtle differences:
+
+```
+rowname_col: Creates row labels (stub)
+groupname_col: Creates row groups with headers
+```
+
+Without this, LLMs conflate similar concepts.
+
+### The llms.txt Standard
+
+The `.well-known/llms.txt` file follows an emerging pattern for making projects LLM-friendly. It's like a `robots.txt` for AI: a standardized place where projects can provide context for LLM consumers.
+
+For Great Tables, our `llms.txt` includes:
+
+- all correct method names
+- common mistakes and corrections
+- parameter reference
+- complete working examples
+- links to full API docs
+
+You can see the complete file here: [`.well-known/llms.txt`](https://github.com/rich-iannone/gt-and-llms/blob/main/.well-known/llms.txt)
+
+### How to Use This in Practice
+
+When prompting LLMs to generate Great Tables code:
+
+1. **Point to the reference**:
+   ```
+   Using Great Tables in Python, following this API guide:
+   [paste relevant sections from llms.txt]
+   ```
+
+2. **Provide explicit schemas**:
+   ```
+   The CSV has these columns: [list them]
+   ```
+
+3. **Start simple, add complexity**:
+   ```
+   First, create a basic table with formatting.
+   Then, add conditional styling.
+   Finally, add summary rows.
+   ```
+
+4. **Verify and iterate**:
+   ```
+   Test the code, and if it fails, provide the error message
+   and ask the LLM to fix it using the reference guide.
+   ```
+
+## The Hacker News Take
+
+Let's be real: a **17% success rate** across all examples (3 working out of 15 attempts) is... not great. These are frontier models—Claude Sonnet 4.5, GPT-5, Gemini 2.5 Pro—representing the absolute cutting edge of AI capabilities. And they face-planted on table formatting.
+
+Why? Let me count the ways.
+
+### 1. API Hallucination: When the LLM Dreams Up Methods
+
+The most common failure mode was **inventing methods that don't exist**:
+
+- `.tab_footnote()` (should be `.tab_source_note()`)
+- `.style()` (should be `.tab_style()`)  
+- `.text_transform()` (should be `.fmt()` with a function)
+- `.summary_rows()` (should be `.grand_summary_rows()`)
+- `escape=` parameter in `.fmt()` (doesn't exist)
+- `where=` parameter in `loc.body()` (should be `rows=`)
+
+Here's the thing: these aren't random gibberish. They're **plausible-sounding method names** based on patterns the LLM has seen elsewhere. The LLM understands the *concept* (add a footnote, transform text, create summary rows) but fabricates the API.
+
+This is like someone who's never driven a car but has watched a lot of movies trying to explain how to start one: "Just turn the ignition key and press the go pedal!" The semantic understanding is there, but the specifics are wrong.
+
+### 2. R's gt Package: The Poisoned Training Data
+
+Great Tables is the **Python port** of the R package `gt`, which has been around longer and has way more code examples in the training data. Many of the LLM errors look suspiciously like R `gt` syntax:
+
+- R's `gt` has `tab_footnote()`—Great Tables doesn't
+- R's ecosystem uses different parameter names
+- R's approach to styling is subtly different
+
+The LLMs are pattern-matching across both libraries and getting confused about which methods belong to which. It's like mixing up British and American English—"lift" vs "elevator"—except the consequences are syntax errors instead of confused looks.
+
+### 3. The Curse of Reasonable Naming
+
+Some of the hallucinated APIs are *better designed* than the real thing:
+
+**GPT-5's invented `.style()` method**:
+
+```python
+.style(loc.body(rows=...), b=True)  # Clean! Intuitive!
+```
+
+**Actual Great Tables API**:
+
+```python
+.tab_style(style=style.text(weight="bold"), locations=loc.body(rows=...))  # More verbose
+```
+
+The LLM is essentially trying to design a cleaner API on the fly. It "knows" what good API design looks like from training on thousands of libraries, so when it doesn't perfectly recall the Great Tables API, it invents something that *should* work.
+
+This is actually a fascinating peek into how LLMs understand software design patterns. They're not just memorizing—they're inferring principles and applying them, even when those inferences are wrong.
+
+### 4. Column Name Roulette
+
+Multiple failures came from LLMs guessing column names:
+
+- `issues` vs `issues_open` and `issues_closed`
+- `open_issues` vs `issues_open` 
+- `stock` vs `equity`
+- `watchers` (doesn't exist in this CSV)
+
+Without access to the actual data schema, LLMs fall back on "what column names are common in similar datasets." This works surprisingly often (which is why it's in their strategy), but when it fails, it fails hard.
+
+**The fix**: Always give LLMs explicit schema information, or expect to iterate when they guess wrong.
+
+### 5. The Zero-Shot Handicap
+
+These experiments were **zero-shot**—no examples, no API reference, no context beyond the prompt. The LLMs were essentially asked to:
+
+1. infer the data structure from a filename
+2. recall an API they've seen limited examples of
+3. combine business logic with styling
+4. get everything right on the first try
+
+That's a tough ask! Even experienced developers look up API docs constantly.
+
+**For comparison**, if you give an LLM:
+
+- the actual column names
+- one working example of similar complexity
+- the API documentation
+
+Success rates shoot way up. But that kind of defeats the premise of "just tell the LLM what you want."
+
+### 6. The Cascading Failure Effect
+
+Often, one small error would cascade into bigger problems:
+
+1. LLM guesses wrong column name → error
+2. LLM tries to work around it → more complex code
+3. LLM invents a method to solve the workaround → syntax error
+4. everything explodes
+
+This is why **Example 1 had a 100% success rate but Example 5 had 0%**. Simple requests fail cleanly. Complex requests fail in recursive, compounding ways.
+
+## The Real Lesson: LLMs Are Junior Developers
+
+Here's my actual takeaway after running these experiments:
+
+**LLMs are like junior developers who have read a lot of documentation but haven't built much.**
+
+They:
+
+- understand concepts quickly
+- can write syntactically correct code
+- know common patterns and best practices
+- hallucinate APIs when they don't know the exact method
+- struggle with complex, multi-step logic
+- don't "know what they don't know"
+
+If you were code reviewing a junior dev who submitted this Great Tables code, you'd say: "Good instincts, but go read the docs and try again."
+
+The dangerous part is the **confidence**. A junior dev might say "I think it's `.tab_footnote()`?" An LLM just writes `.tab_footnote()` and moves on. No hesitation, no uncertainty markers, just confidently wrong code.
+
+## So Should You Use LLMs for Great Tables?
+
+**Yes—but treat them like documentation-aware autocomplete, not magic.**
+
+**Do:**
+
+- use LLMs to scaffold the basic structure
+- let them handle boilerplate (formatting, styling patterns)
+- ask them for examples of specific features
+- iterate with them on styling and polish
+
+**Don't:**
+
+- trust the output blindly
+- expect complex logic to work first try
+- skip reading the actual API docs
+- use them for production code without testing
+
+**The workflow that actually works:**
+
+1. Prompt the LLM with clear requirements
+2. Read the generated code critically
+3. Test it (it will probably fail)
+4. Look up the actual API docs for the failing methods
+5. Fix the hallucinated methods
+6. Iterate
+
+This is still way faster than writing from scratch! But it requires you to be an informed user who can spot the hallucinations.
+
+## What This Reveals About Current AI Capabilities
+
+The truth is more interesting than simple "LLMs are useless" or "LLMs are perfect" takes: **LLMs are pattern completion engines with semantic understanding**. They're incredible at generating plausible code that often works, but they lack the grounding to know when they've strayed from reality into hallucination.
+
+For Great Tables specifically, the API surface is small enough and specialized enough that LLMs haven't seen it enough times to deeply memorize it. They're interpolating from similar libraries (pandas styling, R's gt, plotly tables) and hoping for the best.
+
+**This will get better**. As Great Tables grows and more examples enter the training data, LLM accuracy will improve. But we're seeing a fascinating snapshot of AI capabilities in late 2025: incredible at the common stuff, hilariously bad at the long tail.
+
+Honestly, that makes me more excited to use them, not less. Understanding the failure modes makes you better at prompting. And being better at prompting means you can actually create code faster and more reliably. You just need to keep your critical thinking hat on.
+
+## Practical Tips for LLM-Assisted Table Making
+
+Based on everything we've learned from these experiments, here are some concrete strategies that actually work when using LLMs to generate Great Tables code:
+
+1. **Start with the data transformation.** Get your Polars/Pandas code right first, then style.
+
+2. **Give explicit schemas.** Don't make the LLM guess column names.
+
+3. **Prompt with the library name.** "Using Great Tables in Python" not "make a table"
+
+4. **Reference specific methods.** If you know you want `fmt_currency()`, mention it.
+
+5. **Break complex requests into steps.** Don't ask for everything at once.
+
+6. **Show working examples.** One example is worth a thousand words of prompting.
+
+7. **Verify against docs.** When something fails, look up the method in the [Great Tables API reference](https://posit-dev.github.io/great-tables/reference/).
+
+8. **Expect to iterate.** The first output is a draft, not production code.
+
+## Why This Matters for Great Tables
+
+As the authors of Great Tables, we want LLMs to be excellent at generating code for our library. Not just okay but *excellent*. Why?
+
+1. **Lower barrier to entry**: Users can describe what they want and get working code
+2. **Faster prototyping**: Even experienced users can scaffold complex tables quickly
+3. **Better discoverability**: LLMs can suggest features users didn't know existed
+4. **Reduced documentation friction**: Natural language queries supplement formal docs
+
+But here's the catch: **LLMs can only be as good as the information available to them**.
+
+### The Path Forward
+
+This experiment revealed exactly what LLMs need to succeed with Great Tables:
+
+**✅ Clear API documentation**: We have this at [posit-dev.github.io/great-tables](https://posit-dev.github.io/great-tables/)
+
+**✅ Abundant code examples**: More real-world examples = better pattern recognition
+
+**✅ LLM-specific context**: The `llms.txt` reference guide we created
+
+**✅ Explicit error corrections**: "Don't use X, use Y instead" lists
+
+**⚠️ More training data**: As Great Tables grows, LLM performance will naturally improve
+
+### What We're Doing About It
+
+We're committed to making Great Tables the most LLM-friendly table library:
+
+1. **Publishing more examples**: real-world use cases in our documentation
+2. **Maintaining llms.txt**: keep the reference guide current with API changes
+3. **Creating anti-patterns guide**: document common mistakes and corrections
+4. **Building test suites**: verify LLM-generated code patterns actually work
+5. **Engaging with AI providers**: share our learnings about API-specific challenges
+
+### A Challenge to the Community
+
+If you're using Great Tables with LLM assistance:
+
+**Share your prompts and results!** Post them as GitHub discussions, blog about them, post them on the socials. The more examples of Great Tables code in the wild, the better LLMs become at generating it.
+
+**Report hallucinations!** When an LLM invents a method that doesn't exist, tell us. We can add it to the llms.txt anti-patterns section.
+
+**Contribute to llms.txt!** Found a pattern that works well? A common mistake you keep seeing? Submit a PR to improve the reference guide.
+
+## Conclusion: The Future is Collaborative (and Bright)
+
+Let's recap the journey:
+
+**Starting point**: 17% success rate with zero-shot prompts. LLMs invented methods, guessed column names, and confidently crashed.
+
+**Breakthrough**: Adding structured API context (llms.txt) increased success to 73%. Same models, same prompts, dramatically better results.
+
+**The insight**: LLMs don't need to memorize every API. They need *access* to accurate information and clear guidance on common mistakes.
+
+This is actually **great news** for everyone:
+
+**For Users**: You can get excellent results today by:
+
+- providing column schemas in your prompts
+- referencing the llms.txt guide
+- starting simple and iterating
+- testing output immediately
+
+**For Library Authors**: You can dramatically improve LLM performance by:
+
+- creating LLM-friendly reference guides
+- publishing anti-patterns documentation  
+- sharing abundant code examples
+- engaging with how LLMs learn
+
+**For the Ecosystem**: We're seeing the emergence of a new standard:
+
+- `.well-known/llms.txt` as a convention
+- explicit hallucination prevention
+- library-specific AI context
+- collaborative improvement
+
+### The Real Takeaway
+
+After testing frontier LLMs on Great Tables, here's what I learned:
+
+**Zero-shot AI coding is hard. Context-aware AI coding is so much better.**
+
+When LLMs have the right information, they're genuinely transformative. They understand intent very well, generate syntactically correct code, and can produce sophisticated tables from natural language descriptions.
+
+The failures we saw weren't limitations of AI but they were **limitations of available context**. And context is something we can fix.
+
+So yes, this started as a story about failure. But it ends as a story about solutions. LLMs absolutely can be excellent at generating Great Tables code. They just need help from us: the library authors, the documentation writers, the community members who share examples.
+
+And that's exactly what we're committed to providing.
+
+### Try It Yourself
+
+All the code, data, and the complete `llms.txt` reference guide are in this repository:
+
+**[github.com/rich-iannone/gt-and-llms](https://github.com/rich-iannone/gt-and-llms)**
+
+Clone it. Run the experiments. Try the prompts with and without context. See the dramatic difference for yourself.
+
+Then go build something beautiful with Great Tables and LLM assistance. And when you do, share it so the next person's LLM can learn from your example.
+
+Because that's kinda how we make this technology work for everyone.
+
+---
+
+**Want to contribute?** 
+
+- Report LLM hallucinations: [GitHub Issues](https://github.com/posit-dev/great-tables/issues)
+- Share your examples: Post in [GitHub Discussions](https://github.com/posit-dev/great-tables/discussions)
+
+**Questions about Great Tables?**
+
+- Documentation: [posit-dev.github.io/great-tables](https://posit-dev.github.io/great-tables/)
+- API Reference: [posit-dev.github.io/great-tables/reference](https://posit-dev.github.io/great-tables/reference/)
+- Community: [GitHub Discussions](https://github.com/posit-dev/great-tables/discussions)
+
+*If this post helped you understand how to work effectively with LLMs on specialized libraries, share it with others who might benefit. The more people understand context-aware prompting, the better our tools become.*
