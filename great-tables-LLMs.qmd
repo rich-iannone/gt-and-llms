@@ -8,7 +8,7 @@ html-table-processing: none
 
 ## The Experiment: From 17% to 73% Success Rate
 
-I ran an experiment testing whether Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro could generate working [Great Tables](https://posit-dev.github.io/great-tables/) code from natural language prompts.
+I ran an experiment testing whether Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro could generate working [Great Tables](https://posit-dev.github.io/great-tables/) code from descriptions of tables I wanted to create. Each prompt described the desired table and referenced a CSV file with the data.
 
 **Round 1 (Zero-shot)**: 17% success rate. Out of 15 attempts, only 3 worked. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
 
@@ -26,7 +26,7 @@ I created 5 examples ranging from simple to complex:
 4. **Coffee Shop Ratings**: star ratings, bold text, footnotes, multi-dimensional styling
 5. **A/B Test Results**: calculated metrics, lift columns, summary rows, complex logic
 
-For each example, I gave all three LLMs identical prompts describing what I wanted, then asked them to generate Great Tables code. I ran these experiments in separate sessions to avoid contamination (later prompts didn't get hints from earlier ones).
+For each example, I gave all three LLMs identical prompts describing what I wanted, then asked them to generate Great Tables code. These experiments were performed on October 28, 2025, using GitHub Copilot's "Ask" feature in separate chat sessions to avoid contamination (later prompts didn't get hints from earlier ones).
 
 **The key constraint: zero-shot.** No examples, no API documentation, just the prompt and the LLM's training data.
 
@@ -269,7 +269,7 @@ Engineering Manager,L5,245000,45000,155000,445000,11,Seattle
 ```
 
 **My prompt:**
-> Create a table from `tech_salaries.csv` that:
+> Using Great Tables, create a table from `tech_salaries.csv` that:
 > - Groups rows by role
 > - Formats all salary/compensation columns as currency (no cents)
 > - Colors the total_comp column using a gradient from white to green, with higher values darker
@@ -467,7 +467,7 @@ plotly.py,Python,13456,2345,234,4567,6789,4
 ```
 
 **My prompt:**
-> Create a table from `github_repos.csv` showing repository statistics. Format numbers with K suffix for thousands (e.g., 23.4K). Add a text color scale for stars (more stars = darker blue). Make the last_commit_days column show as "X days ago" and highlight in red if over 7 days. Add small bar plots in the issues columns showing open vs closed ratio.
+> Use Great Tables to create a table from `github_repos.csv` showing repository statistics. Format numbers with K suffix for thousands (e.g., 23.4K). Add a text color scale for stars (more stars = darker blue). Make the last_commit_days column show as "X days ago" and highlight in red if over 7 days. Add small bar plots in the issues columns showing open vs closed ratio.
 
 **What the LLM gave me:**
 
@@ -532,7 +532,7 @@ gt_repos
 ```
 
 ```
-Note: The issues column would need to be structured as a list column in the CSV (e.g., `[open_count, closed_count]`) for the nanoplot to work. If your CSV has separate `issues_open` and `issues_closed` columns, you'd need to combine them first with Polars:
+# Note: The issues column would need to be structured as a list column in the CSV (e.g., `[open_count, closed_count]`) for the nanoplot to work. If your CSV has separate `issues_open` and `issues_closed` columns, you'd need to combine them first with Polars:
 ```
 
 ```{python}
@@ -741,7 +741,7 @@ Four Barrel,Espresso,3.50,4.9,789,5,4,100
 
 **My prompt:**
 
-> Make a table from `coffee_ratings.csv` that groups by shop. Format price as currency. Show rating as stars (★). Use a color gradient on the rating column (red to green). Make popular drinks (votes > 500) bold. Add a footnote explaining that wifi speed is in Mbps.
+> Make a Great Tables table from `coffee_ratings.csv` that groups by shop. Format price as currency. Show rating as stars (★). Use a color gradient on the rating column (red to green). Make popular drinks (votes > 500) bold. Add a footnote explaining that wifi speed is in Mbps.
 
 ::: {.panel-tabset}
 ## Claude Sonnet 4.5
@@ -943,11 +943,11 @@ Oh boy, where do I even start? Gemini went full fever dream:
 
 Gemini basically invented an entire alternative API that's *almost* right but wrong in every detail. It's like watching someone describe Paris after only seeing it in dreams.
 
-**The pattern here is crucial**: LLMs don't actually know the Great Tables API. They're generating plausible-sounding method names based on patterns they've seen in other table libraries, other parts of the Great Tables API, and general naming conventions. When you ask for something beyond the most basic examples, they start improvising, and those improvisations are confidently wrong.
+**The pattern here is crucial**: LLMs don't actually know the Great Tables API all too well. They're generating plausible-sounding method names based on patterns they've seen in other table libraries, other parts of the Great Tables API, and general naming conventions. When you ask for something beyond the most basic examples, they start improvising, and those improvisations are bound to be wrong.
 
 ## Example 5: A/B Test Results—When Things Get Spicy
 
-The data for this is:
+The CSV data in this dataset:
 
 ```
 variant,users,conversions,revenue,avg_session_sec,bounce_rate
@@ -959,7 +959,7 @@ Test C,50000,2890,321450,312,0.35
 
 **My prompt:**
 
-> Create a table from `ab_test_results.csv` comparing variants. Calculate conversion rate and revenue per user. Show the lift vs Control for each variant. Color the lift column: green if positive, red if negative. Add a summary row showing totals. Format bounce_rate as percentage.
+> Using Great Tables, make a table from `ab_test_results.csv` comparing variants. Calculate conversion rate and revenue per user. Show the lift vs Control for each variant. Color the lift column: green if positive, red if negative. Add a summary row showing totals. Format bounce_rate as percentage.
 
 ::: {.panel-tabset}
 
@@ -1463,7 +1463,7 @@ Without this, LLMs conflate similar concepts.
 
 The `.well-known/llms.txt` file follows an emerging pattern for making projects LLM-friendly. It's like a `robots.txt` for AI: a standardized place where projects can provide context for LLM consumers.
 
-For Great Tables, our `llms.txt` includes:
+For Great Tables, our `llms.txt` (current as of v0.19.0) includes:
 
 - all correct method names
 - common mistakes and corrections
@@ -1472,6 +1472,8 @@ For Great Tables, our `llms.txt` includes:
 - links to full API docs
 
 You can see the complete file here: [`.well-known/llms.txt`](https://github.com/rich-iannone/gt-and-llms/blob/main/.well-known/llms.txt)
+
+**Note**: While this reference guide is available in this repository, it's not yet part of the official Great Tables project. We're exploring ways to automatically generate and maintain this file for each release, making it easier for users and LLMs to access the most current API information.
 
 ### How to Use This in Practice
 
@@ -1501,9 +1503,9 @@ When prompting LLMs to generate Great Tables code:
    and ask the LLM to fix it using the reference guide.
    ```
 
-## The Hacker News Take
+## Understanding the Failure Patterns
 
-Let's be real: a **17% success rate** across all examples (3 working out of 15 attempts) is... not great. These are frontier models—Claude Sonnet 4.5, GPT-5, Gemini 2.5 Pro—representing the absolute cutting edge of AI capabilities. And they face-planted on table formatting.
+Let's be real: a **17% success rate** across all examples (3 working out of 15 attempts) is... not great. These are frontier models (Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro) representing some of the most capable AI systems available today. And they face-planted on table formatting.
 
 Why? Let me count the ways.
 
@@ -1634,12 +1636,12 @@ The dangerous part is the **confidence**. A junior dev might say "I think it's `
 
 **The workflow that actually works:**
 
-1. Prompt the LLM with clear requirements
-2. Read the generated code critically
-3. Test it (it will probably fail)
-4. Look up the actual API docs for the failing methods
-5. Fix the hallucinated methods
-6. Iterate
+1. prompt the LLM with clear requirements
+2. read the generated code critically
+3. test it (it will probably fail)
+4. look up the actual API docs for the failing methods
+5. fix the hallucinated methods
+6. iterate
 
 This is still way faster than writing from scratch! But it requires you to be an informed user who can spot the hallucinations.
 
@@ -1767,7 +1769,7 @@ And that's exactly what we're committed to providing.
 
 ### Try It Yourself
 
-All the code, data, and the complete `llms.txt` reference guide are in this repository:
+All the code, data, results, and the complete `llms.txt` text file are in this repository:
 
 **[github.com/rich-iannone/gt-and-llms](https://github.com/rich-iannone/gt-and-llms)**
 
@@ -1777,7 +1779,7 @@ Then go build something beautiful with Great Tables and LLM assistance. And when
 
 Because that's kinda how we make this technology work for everyone.
 
----
+<hr />
 
 **Want to contribute?** 
 
