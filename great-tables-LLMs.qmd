@@ -19,6 +19,7 @@ This post shows you exactly what went wrong, what made it right, and how to stru
 ## The Setup: Clean, Controlled, Realistic
 
 I created 5 examples ranging from simple to complex:
+
 1. **API Latency Dashboard**: basic formatting and conditional styling
 2. **Tech Salaries**: row grouping, currency formatting, color gradients
 3. **GitHub Repository Stats**: K-suffix formatting, bar charts, multi-column styling
