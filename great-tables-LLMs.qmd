@@ -245,7 +245,7 @@ This is actually the *best case scenario* for LLM-generated Great Tables code. W
 3. **No edge cases**: The CSV columns matched expectations, no data transformations needed, no complex conditional logic
 4. **Common patterns**: Conditional row highlighting is probably one of the most frequent patterns in the training data
 
-This is the moment that makes you think "holy crap, maybe LLMs really *can* write tables for me!" But hold that thought: we're about to see where things get spicy.
+This is the moment that makes you think "Wow! Maybe LLMs really *can* write tables for me!" But hold that thought, we're about to see where things get a little bit spicy.
 
 ## Example 2: Tech Salaries, or, When the LLM Gets Creative
 
