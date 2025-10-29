@@ -1,0 +1,902 @@
+# Great Tables: LLM Reference Guide
+
+> Great Tables is a Python library for creating publication-quality tables.
+> This guide helps LLMs generate correct Great Tables code.
+
+## Core Principles
+
+1. **Method chaining**: Great Tables uses fluent API design
+2. **Explicit imports**: Always import from `great_tables`, not submodules
+3. **Location targeting**: Use `loc.*` functions to target specific table parts
+4. **Style objects**: Use `style.*` functions to define styling
+
+## Essential Imports
+
+```python
+from great_tables import GT, style, loc, md, html
+import polars as pl  # or pandas as pd
+```
+
+## Table Creation
+
+```python
+GT(
+    data,                    # DataFrame (polars or pandas)
+    rowname_col=None,       # Column to use as row labels (stub)
+    groupname_col=None,     # Column to create row groups
+    auto_align=True,        # Auto-align based on data types
+    locale=None             # Default locale for formatting
+)
+```
+
+**Key distinction**: 
+- `rowname_col`: Creates row labels in the stub (left column)
+- `groupname_col`: Creates row groups with group headers
+
+## Common Methods and Their Correct Usage
+
+### Table Creation
+```python
+GT(
+    data,  # Polars or Pandas DataFrame
+    rowname_col=None,  # Optional: column name to use as row names
+    groupname_col=None,  # Optional: column name to use for row groups
+    id=None  # Optional: table ID
+)
+```
+
+### Headers and Spanners
+```python
+.tab_header(
+    title="Title Text",  # Can use md() or html() helper
+    subtitle="Subtitle Text"  # Optional, can use md() or html()
+)
+
+.tab_spanner(
+    label="Spanner Label",  # Can use md() or html() or units notation
+    columns=None,  # Optional: list of column names to span, e.g., ["col1", "col2"]
+    spanners=None,  # Optional: list of spanner IDs to span over
+    level=None,  # Optional: explicit level (0 is first level above columns)
+    id=None,  # Optional: unique ID for this spanner (defaults to label)
+    gather=True,  # Move columns to be contiguous under spanner (default True)
+    replace=False  # Allow replacing existing spanners at same level (default False)
+)
+
+.tab_spanner_delim(
+    delim="_",  # Delimiter to split column names
+    columns=None  # Optional: specific columns
+)
+
+.tab_stub(
+    rowname_col="col_name",  # Column to use as row names
+    groupname_col=None  # Optional: column for row groups
+)
+
+.tab_stubhead(
+    label="Stubhead Label"  # Label for the stubhead area
+)
+```
+
+### Column Labels
+```python
+.cols_label(
+    cases=None,  # Optional: dictionary mapping {"col_name": "New Label"}
+    **kwargs  # Or use keyword arguments: col1="Display Name 1", col2="Display Name 2"
+)
+# Examples:
+# .cols_label(country_name="Country", year="Year", population="Population")
+# .cols_label(cases={"country_name": "Country", "year": "Year"})
+# .cols_label(col1=md("**Bold Label**"), col2=html("<em>Italic</em>"))
+# .cols_label(OH_k298="OH, {{cm^3 molecules^-1 s^-1}}")  # Units notation
+
+.cols_label_rotate(
+    columns=["col1", "col2"],
+    degrees=45  # Rotation angle
+)
+```
+
+**Important Notes**:
+- GT always uses the original column name from the data for selection, not the label
+- Multiple columns can have the same label
+- Labels support md(), html(), and units notation with double curly braces {{}}
+- You can pass either a `cases` dict OR use keyword arguments, not both
+
+### Formatting Numbers
+```python
+.fmt_number(
+    columns="col_name",  # Can be list: ["col1", "col2"]
+    rows=None,  # Optional: specific rows to format
+    decimals=2,  # Number of decimal places
+    n_sigfig=None,  # Alternative: significant figures (overrides decimals)
+    drop_trailing_zeros=False,  # Remove trailing zeros after decimal
+    drop_trailing_dec_mark=True,  # Remove trailing decimal mark if no decimals
+    use_seps=True,  # Use digit group separators (default True)
+    accounting=False,  # Use parentheses for negative values
+    scale_by=1.0,  # Multiply values before formatting
+    compact=False,  # Use compact notation (e.g., 1.23K, 1.23M)
+    pattern="{x}",  # Pattern for decoration
+    sep_mark=",",  # Thousands separator (ignored if locale provided)
+    dec_mark=".",  # Decimal mark (ignored if locale provided)
+    force_sign=False,  # Show + sign for positive values
+    locale=None  # Optional: locale like "en", "fr" (overrides sep/dec_mark)
+)
+
+.fmt_integer(
+    columns="col_name",
+    rows=None,
+    use_seps=True,  # Use digit group separators (default True)
+    scale_by=1,  # Multiply values before formatting
+    accounting=False,  # Use parentheses for negative values
+    compact=False,  # Use compact notation (e.g., 1K, 1M)
+    pattern="{x}",  # Pattern for decoration
+    sep_mark=",",  # Thousands separator (ignored if locale provided)
+    force_sign=False,  # Show + sign for positive values
+    locale=None  # Optional: locale like "en", "fr" (overrides sep_mark)
+)
+# Rounds to nearest integer, no decimal places
+
+.fmt_currency(
+    columns="col_name",
+    rows=None,
+    currency=None,  # 3-letter code (e.g., "USD", "EUR") or None for locale default
+    use_subunits=True,  # Show decimal portion (e.g., cents)
+    decimals=None,  # Override currency's default decimal places
+    drop_trailing_dec_mark=True,  # Remove trailing decimal mark if no decimals
+    use_seps=True,  # Use digit group separators
+    accounting=False,  # Use parentheses for negative values
+    scale_by=1,  # Multiply values before formatting
+    compact=False,  # Use compact notation (e.g., 1M for 1,000,000)
+    pattern="{x}",  # Pattern for decoration
+    sep_mark=",",  # Thousands separator (ignored if locale provided)
+    dec_mark=".",  # Decimal mark (ignored if locale provided)
+    force_sign=False,  # Show + sign for positive values
+    placement="left",  # "left" ($450) or "right" (450$)
+    incl_space=False,  # Include space between value and symbol
+    locale=None  # Optional: locale like "en", "fr" (overrides sep/dec_mark and can set currency)
+)
+
+.fmt_percent(
+    columns="col_name",
+    rows=None,
+    decimals=2,  # Number of decimal places
+    drop_trailing_zeros=False,  # Remove trailing zeros after decimal
+    drop_trailing_dec_mark=True,  # Remove trailing decimal mark if no decimals
+    scale_values=True,  # Multiply by 100 (default True for proportional values)
+    use_seps=True,  # Use digit group separators
+    accounting=False,  # Use parentheses for negative values
+    pattern="{x}",  # Pattern for decoration
+    sep_mark=",",  # Thousands separator (ignored if locale provided)
+    dec_mark=".",  # Decimal mark (ignored if locale provided)
+    force_sign=False,  # Show + sign for positive values
+    placement="right",  # "right" (23%) or "left" (%23)
+    incl_space=False,  # Include space between value and %
+    locale=None  # Optional: locale like "en", "fr" (overrides sep/dec_mark)
+)
+
+.fmt_scientific(
+    columns="col_name",
+    rows=None,
+    decimals=2,  # Decimal places in mantissa
+    n_sigfig=None,  # Alternative: significant figures (overrides decimals)
+    drop_trailing_zeros=False,  # Remove trailing zeros after decimal
+    drop_trailing_dec_mark=True,  # Remove trailing decimal mark if no decimals
+    scale_by=1,  # Multiply values before formatting
+    exp_style="x10n",  # "x10n" (2.5 × 10⁹), "e" (2.5e9), "E" (2.5E9), "low-ten"
+    pattern="{x}",  # Pattern for decoration
+    sep_mark=",",  # Thousands separator in mantissa
+    dec_mark=".",  # Decimal mark (ignored if locale provided)
+    force_sign_m=False,  # Show + sign for positive mantissa
+    force_sign_n=False,  # Show + sign for positive exponent
+    locale=None  # Optional: locale like "en", "fr" (overrides dec_mark)
+)
+# Format: mantissa × 10^exponent (e.g., 2.5 × 10⁹ = 2,500,000,000)
+
+.fmt_date(
+    columns="col_name",
+    rows=None,
+    date_style="iso",  # See date styles below
+    pattern="{x}",  # Pattern for decoration
+    locale=None  # Optional: locale like "en", "fr" for localized formatting
+)
+# Input: date objects or ISO 8601 strings (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+# Common date_style values (input: 2000-02-29):
+# "iso" → "2000-02-29"
+# "wday_month_day_year" → "Tuesday, February 29, 2000"
+# "wd_m_day_year" → "Tue, Feb 29, 2000"
+# "month_day_year" → "February 29, 2000"
+# "m_day_year" → "Feb 29, 2000"
+# "day_month_year" → "29 February 2000"
+# "day_m_year" → "29 Feb 2000"
+# "year.mn.day" → "2000/02/29"
+# "year_week" → "2000-W09"
+# "year_quarter" → "2000-Q1"
+# Plus 31+ more styles
+
+.fmt_time(
+    columns="col_name",
+    rows=None,
+    time_style="iso",  # See time styles below
+    pattern="{x}",  # Pattern for decoration
+    locale=None  # Optional: locale like "en", "fr" for localized formatting
+)
+# Input: time objects or ISO 8601 strings (HH:MM:SS or YYYY-MM-DD HH:MM:SS)
+# time_style values (input: 14:35:00):
+# "iso" → "14:35:00" (24h)
+# "iso-short" → "14:35" (24h)
+# "h_m_s_p" → "2:35:00 PM" (12h)
+# "h_m_p" → "2:35 PM" (12h)
+# "h_p" → "2 PM" (12h)
+
+.fmt_datetime(
+    columns="col_name",
+    rows=None,
+    date_style="iso",  # See date styles table below
+    time_style="iso",  # See time styles table below
+    format_str=None,  # Optional: strftime format string (overrides date/time_style)
+    sep=" ",  # Separator between date and time
+    pattern="{x}",  # Pattern for decoration
+    locale=None  # Optional: locale like "en", "fr" for localized formatting
+)
+# Common date_style values:
+# "iso" → "2000-02-29"
+# "wday_month_day_year" → "Tuesday, February 29, 2000"
+# "month_day_year" → "February 29, 2000"
+# "m_day_year" → "Feb 29, 2000"
+# "day_month_year" → "29 February 2000"
+# "year.mn.day" → "2000/02/29"
+# Plus 35+ more styles
+#
+# Common time_style values:
+# "iso" → "14:35:00" (24h)
+# "iso-short" → "14:35" (24h)
+# "h_m_s_p" → "2:35:00 PM" (12h)
+# "h_m_p" → "2:35 PM" (12h)
+# "h_p" → "2 PM" (12h)
+
+.fmt_bytes(
+    columns="col_name",
+    rows=None,
+    standard="decimal",  # "decimal" (powers of 1000: kB, MB) or "binary" (powers of 1024: KiB, MiB)
+    decimals=1,  # Number of decimal places
+    n_sigfig=None,  # Alternative: significant figures (overrides decimals)
+    drop_trailing_zeros=True,  # Remove trailing zeros after decimal
+    drop_trailing_dec_mark=True,  # Remove trailing decimal mark if no decimals
+    use_seps=True,  # Use digit group separators
+    pattern="{x}",  # Pattern for decoration
+    sep_mark=",",  # Thousands separator (ignored if locale provided)
+    dec_mark=".",  # Decimal mark (ignored if locale provided)
+    force_sign=False,  # Show + sign for positive values
+    incl_space=True,  # Include space between value and unit (e.g., "5.5 kB")
+    locale=None  # Optional: locale like "en", "fr" (overrides sep_mark/dec_mark)
+)
+# Automatically scales to appropriate unit (B, kB, MB, GB, etc.)
+# Input values assumed to be in bytes
+
+.fmt_roman(
+    columns="col_name",
+    rows=None,
+    case="upper",  # "upper" for I, V, X or "lower" for i, v, x
+    pattern="{x}"  # Pattern for decoration
+)
+# Converts numeric values to Roman numerals, rounds as necessary
+# Example: 24 → "XXIV", 85 → "LXXXV"
+
+.fmt_markdown(
+    columns="col_name",  # Column containing Markdown-formatted text
+    rows=None
+)
+# Transforms Markdown syntax to HTML during render
+# Supports: headings (###), bold (**text**), italic (*text*), links [text](url), etc.
+
+.fmt_units(
+    columns="col_name",  # Column containing units in Great Tables units notation
+    rows=None,
+    pattern="{x}"  # Pattern for decoration (e.g., "({x})" wraps units in parens)
+)
+# Units notation examples:
+# "m/s" or "m / s" → m/s
+# "m s^-1" → m s⁻¹ (with superscript)
+# "m /s" → same as "m s^-1"
+# "E_h" → E with subscript h
+# "t_i^2.5" → t with subscript i and superscript 2.5
+# "m[_0^2]" → uses overstriking for both sub/superscripts
+# "g/L %C6H12O6%" → chemical formula (% delimited) renders correctly
+# "ug", "um", "uL", "umol" → u becomes μ (Greek mu)
+# "degC", "degF" → adds degree symbol
+# ":angstrom:", ":ohm:" → converts to proper symbols
+# ":beta:", ":sigma:", ":Alpha:" → Greek letters
+# Use "*" for italics, "**" for bold (e.g., "*x*^2")
+
+.fmt_image(
+    columns="col_name",  # Column with image references (file paths, URLs, or fragments)
+    rows=None,
+    height=None,  # Image height (can be str like "50px" or int for pixels)
+    width=None,  # Image width (can be str like "50px" or int for pixels)
+    sep=" ",  # Separator between multiple images in same cell
+    path=None,  # Base path to prepend (local path or HTTP/HTTPS URL)
+    file_pattern="{}",  # Pattern to map cell values to filenames (use {} placeholder)
+    encode=True  # Base64 encode local images (default True)
+)
+# Cell values can be:
+# 1. Local file paths: "images/photo.jpg"
+# 2. URLs: "https://example.com/image.png"
+# 3. Filenames (with path= arg): "photo.jpg" + path="images/"
+# 4. Fragments (with file_pattern=): "logo" + file_pattern="img_{}.png" + path="assets/"
+# Multiple images per cell: separate references with commas
+
+.fmt_icon(
+    columns="col_name",  # Column containing Font Awesome icon names
+    rows=None,
+    height=None,  # Default: "1em"; can be str or number for pixels
+    sep=" ",  # Separator between multiple icons in same cell
+    stroke_color=None,  # Icon outline color (default: "currentColor")
+    stroke_width=None,  # Icon outline width (default: "1px"); can be str or int
+    stroke_alpha=None,  # Stroke transparency: 0.0 to 1.0
+    fill_color=None,  # Icon fill color or dict mapping icon names to colors
+    fill_alpha=None,  # Fill transparency: 0.0 to 1.0
+    margin_left=None,  # Left margin (default: "auto", try "0.2em" for spacing)
+    margin_right=None  # Right margin (default: "auto", try "0.2em" for spacing)
+)
+# Uses Font Awesome icon names (e.g., "circle-check", "arrow-up", "house-chimney")
+# Multiple icons per cell: separate names with commas (e.g., "hard-drive,clock")
+# fill_color can be single color or dict: {"circle-check": "green", "circle-xmark": "red"}
+
+.fmt_flag(
+    columns="col_name",  # Column containing 2- or 3-letter ISO 3166-1 country codes
+    rows=None,
+    height="1em",  # Height of flag icons (default "1em", can be number for pixels)
+    sep=" ",  # Separator between multiple flags in same cell
+    use_title=True  # Show country name on hover (default True)
+)
+# Country codes can be 2-letter (e.g., "EG", "GB") or 3-letter (e.g., "BEL", "NLD")
+# Multiple flags per cell: separate codes with commas (e.g., "GB,TT")
+
+.fmt_nanoplot(
+    columns="col_name",
+    rows=None,  # Optional: specific rows to format
+    plot_type="line",  # or "bar"
+    plot_height="2em",  # Height of nanoplots
+    missing_vals="marker",  # or "gap", "zero", "remove"
+    autoscale=False,  # Share scale across all nanoplots if True
+    reference_line=None,  # Numeric value or keyword: "mean", "median", "min", "max", "q1", "q3", "first", "last"
+    reference_area=None,  # List of two values [bottom, top] using same options as reference_line
+    expand_x=None,  # List of values to expand x-axis range
+    expand_y=None,  # List of values to expand y-axis range
+    options=None  # nanoplot_options() object for custom styling
+)
+# Input data can be:
+# - Strings with space-separated values: "20 23 6 7 37"
+# - List columns: [20, 23, 6, 7, 37]
+# - Dict columns: {"val": [20, 23, 6, 7, 37]}
+# - Single numeric values for horizontal bar/line plots
+
+.fmt_tf(
+    columns="col_name",  # Column containing True/False boolean values
+    rows=None,
+    tf_style="true-false",  # Preset style (see options below)
+    pattern="{x}",  # Pattern for decoration
+    true_val=None,  # Override text for True values
+    false_val=None,  # Override text for False values
+    na_val=None,  # Text/symbol for missing values
+    colors=None  # List of colors: [true_color, false_color, na_color]
+)
+# tf_style options (True → False):
+# "true-false" → "true" / "false"
+# "yes-no" → "yes" / "no"
+# "up-down" → "up" / "down"
+# "check-mark" → "✓" / "✗"
+# "circles" → "●" / "○"
+# "squares" → "■" / "□"
+# "diamonds" → "◆" / "◇"
+# "arrows" → "↑" / "↓"
+# "triangles" → "▲" / "▼"
+# "triangles-lr" → "▶" / "◀"
+#
+# colors= examples:
+# ["green"] → all values green
+# ["green", "red"] → True green, False red
+# ["green", "red", "gray"] → True green, False red, NA gray
+
+.fmt(
+    fns=lambda x: f"Custom: {x}",  # Formatter function or dict of functions
+    columns="col_name",
+    rows=None,
+    is_substitution=False  # Run after other formatters if True
+)
+# Custom formatting with raw data values
+# fns can be:
+# - Single function: lambda x: f"prefix-{x}-suffix"
+# - Dict of functions for different contexts: {"html": func1, "latex": func2}
+# Function receives raw cell value and returns formatted string
+# Examples:
+# - lambda x: f"${x:,.2f}"
+# - lambda x: x.upper() if isinstance(x, str) else x
+# - lambda x: "✓" if x > 0 else "✗"
+
+.sub_missing(
+    columns="col_name",
+    rows=None,
+    missing_text=None  # Text for None/NA values (default: em dash "—")
+)
+# Use md() or html() helpers for styled text
+# Example: .sub_missing(columns="data", missing_text=md("*N/A*"))
+
+.sub_zero(
+    columns="col_name",
+    rows=None,
+    zero_text="nil"  # Text to replace zero values (default: "nil")
+)
+# Use md() or html() helpers for styled text
+# sub_zero() works with already-formatted values; order doesn't matter
+
+### Styling
+```python
+.tab_style(
+    style=style.fill(color="#E5E7EB"),  # Background color
+    locations=loc.body(columns="col_name", rows=None)
+)
+
+.tab_style(
+    style=style.text(
+        color="#DC2626",
+        font="Arial",
+        size="14px",
+        weight="bold",  # or "normal", "lighter", "bolder", numeric 100-900
+        style="normal",  # or "italic", "oblique"
+        align="center",  # or "left", "right"
+        v_align="middle"  # or "top", "bottom"
+    ),
+    locations=loc.body(columns="col_name", rows=[0, 1])
+)
+
+.tab_style(
+    style=style.borders(
+        sides=["top", "bottom"],  # List: ["top", "right", "bottom", "left", "all"]
+        color="#000000",
+        weight="2px",
+        style="solid"  # or "dashed", "dotted"
+    ),
+    locations=loc.body(columns=["col1", "col2"])
+)
+
+.tab_style(
+    style=style.css("custom-css: value;"),  # Custom CSS
+    locations=loc.body(columns="col_name")
+)
+
+.data_color(
+    columns="col_name",
+    rows=None,  # Optional: specific rows to color
+    palette=None,  # List of colors or ColorBrewer/viridis palette name
+    domain=None,  # Optional: [min_val, max_val] to define value range
+    na_color=None,  # Color for missing values (default: "#808080" gray)
+    alpha=None,  # Optional: fixed alpha transparency (0.0 to 1.0)
+    reverse=False,  # Reverse color scale direction
+    autocolor_text=True,  # Auto-adjust text color for contrast (default True)
+    truncate=False  # Truncate out-of-domain values vs setting to NA
+)
+# Automatically colors cell backgrounds based on values
+# Numeric columns: color scales from low to high
+# Text columns: each unique value gets a color
+#
+# palette examples:
+# - Custom: ["#FF0000", "#00FF00", "#0000FF"] or ["red", "green", "blue"]
+# - ColorBrewer: "RdYlGn", "Blues", "Spectral" (35+ options)
+# - viridis family: "viridis", "plasma", "inferno", "magma", "cividis"
+#
+# domain examples:
+# - [0, 100] → values below 0 or above 100 handled by na_color or truncation
+# - None → automatically uses min/max from data
+#
+# Common ColorBrewer palettes:
+# Diverging: "RdBu", "RdYlGn", "BrBG", "PiYG", "PRGn" (colorblind-friendly)
+# Sequential: "Blues", "Greens", "Reds", "YlGnBu", "Oranges" (colorblind-friendly)
+# Qualitative: "Set1", "Set2", "Dark2", "Paired" (good for categories)
+```
+
+### Summary Rows
+```
+
+### Source Notes
+```python
+.tab_source_note(
+    source_note="Data source: ..."  # Can use md() or html()
+)
+
+# IMPORTANT: There is NO .tab_footnote() method in Great Tables!
+# Use .tab_source_note() for notes at the bottom of the table.
+```
+
+### Column Operations
+```python
+.cols_hide(
+    columns=["col1", "col2"]  # Columns to hide
+)
+
+.cols_unhide(
+    columns=["col1", "col2"]  # Columns to unhide
+)
+
+.cols_move(
+    columns=["col1", "col2"],
+    after="target_col"  # Move columns after this column
+)
+
+.cols_move_to_start(
+    columns=["col1", "col2"]
+)
+
+.cols_move_to_end(
+    columns=["col1", "col2"]
+)
+
+.cols_width(
+    cases={
+        "col1": "100px",
+        "col2": "200px"
+    }  # Dictionary mapping columns to widths
+)
+
+.cols_align(
+    align="center",  # or "left", "right"
+    columns=["col1", "col2"]
+)
+```
+
+### Table Options
+```python
+.tab_options(
+    # Many options available, see documentation
+    # Examples:
+    table_width="100%",
+    table_background_color="#FFFFFF",
+    column_labels_background_color="#F3F4F6"
+)
+
+# Or use convenience methods:
+.opt_align_table_header(align="left")  # or "center", "right"
+.opt_row_striping(row_striping=True)
+.opt_all_caps(all_caps=True, locations=["column_labels"])
+.opt_vertical_padding(scale=1.0)
+.opt_horizontal_padding(scale=1.0)
+.opt_table_outline(style="solid", width="1px", color="#000000")
+.opt_table_font(font="Arial")
+.opt_stylize(style=1, color="blue")  # Pre-built color schemes
+```
+
+### Helper Functions
+```python
+md("**Bold text** and _italic_")  # Markdown formatting
+html("<b>Bold text</b>")  # HTML formatting
+from_column(column="col_name")  # Fetch style value from column
+google_font(name="Roboto")  # Use Google Font
+system_fonts(name="monospace-code")  # Use system font stack
+
+# Nanoplot customization
+nanoplot_options(
+    # Data points (for line plots)
+    data_point_radius=None,  # Default: 10; can be int or list[int]
+    data_point_stroke_color=None,  # Default: "#FFFFFF"; can be str or list[str]
+    data_point_stroke_width=None,  # Default: 4; can be int or list[int]
+    data_point_fill_color=None,  # Default: "#FF0000"; can be str or list[str]
+    
+    # Data line (for line plots)
+    data_line_type=None,  # "curved" or "straight"
+    data_line_stroke_color=None,  # Default: "#4682B4"
+    data_line_stroke_width=None,  # Default: 4
+    
+    # Data area (for line plots)
+    data_area_fill_color=None,  # Default: "#FF0000"
+    
+    # Data bars (for bar plots)
+    data_bar_stroke_color=None,  # Default: "#3290CC"; can be str or list[str]
+    data_bar_stroke_width=None,  # Default: 4; can be int or list[int]
+    data_bar_fill_color=None,  # Default: "#3FB5FF"; can be str or list[str]
+    data_bar_negative_stroke_color=None,  # Default: "#CC3243"
+    data_bar_negative_stroke_width=None,  # Default: 4
+    data_bar_negative_fill_color=None,  # Default: "#D75A68"
+    
+    # Reference line and area
+    reference_line_color=None,  # Default: "#75A8B0"
+    reference_area_fill_color=None,  # Default: "#A6E6F2"
+    
+    # Vertical guides (interactive hover guides)
+    vertical_guide_stroke_color=None,  # Default: "#911EB4"
+    vertical_guide_stroke_width=None,  # Default: 12
+    
+    # Show/hide layers
+    show_data_points=None,  # Default: True
+    show_data_line=None,  # Default: True
+    show_data_area=None,  # Default: True
+    show_reference_line=None,  # Default: True
+    show_reference_area=None,  # Default: True
+    show_vertical_guides=None,  # Default: True
+    show_y_axis_guide=None,  # Default: True
+    
+    # Value display
+    interactive_data_values=None,  # Default: True (show values on hover only)
+    
+    # Formatting functions
+    y_val_fmt_fn=None,  # Function for formatting y-axis data values
+    y_axis_fmt_fn=None,  # Function for formatting y-axis label values
+    y_ref_line_fmt_fn=None,  # Function for formatting reference line value
+    
+    # Currency display
+    currency=None  # 3-letter code like "USD" or name like "dollar"
+)
+```
+
+## Location Targeting (loc module)
+
+Location objects specify where styling or other operations apply:
+
+```python
+# Table header (title AND subtitle together)
+loc.header()  # Targets both title and subtitle at once
+
+# Title only (in header)
+loc.title()  # Targets just the title part
+
+# Subtitle only (in header)
+loc.subtitle()  # Targets just the subtitle part
+
+# Column header (all column labels AND spanners)
+loc.column_header()  # Targets entire column header area
+
+# Column labels specifically
+loc.column_labels(
+    columns=None  # Specific column labels (default: all columns)
+)
+# Example: loc.column_labels(columns=["col1", "col2"])
+
+# Spanner labels
+loc.spanner_labels(
+    ids=None  # List of spanner IDs to target (required if targeting specific spanners)
+)
+# Example: loc.spanner_labels(ids=["performance", "make and model"])
+
+# Stubhead (label for the stub column header area)
+loc.stubhead()  # Targets the cell at top-left when stub is present
+
+# Stub (row names/labels in leftmost column)
+loc.stub(
+    rows=None  # Specific row names (default: all rows)
+)
+# Example: loc.stub(rows=["row_1", "row_3"])
+
+# Row groups (group label cells spanning the table)
+loc.row_groups(
+    rows=None  # Specific group names (default: all groups)
+)
+# Example: loc.row_groups(rows=["grp_a", "grp_b"])
+
+# Body cells (main data cells)
+loc.body(
+    columns=None,  # Column names (default: all columns)
+    rows=None,  # Row indices, row names, or Polars/Pandas expression
+    mask=None  # Experimental: Polars expression for cell-based selection
+)
+# Examples:
+# loc.body(columns="value", rows=pl.col("value") > 100)
+# loc.body(columns=["col1", "col2"], rows=[0, 1, 2])
+# Important: Use rows= (NOT where=). The where= parameter does not exist.
+
+
+# Footer (all footer content including source notes)
+loc.footer()  # Targets entire footer area
+
+# Source notes (just the source notes in footer)
+loc.source_notes()  # Targets only source notes
+```
+
+**Critical Notes**:
+- Use `rows=` parameter (NOT `where=`). The `where` parameter does not exist.
+- Use `loc.column_header()` or `loc.column_labels()` for column headers (NOT `loc.column_label()` singular)
+- There is NO `loc.summary()` - use `loc.grand_summary()` instead
+- `loc.stub()` and `loc.row_groups()` use `rows=` parameter for names, not `groups=`
+
+## Style Objects (style module)
+
+Style objects specify how to style targeted locations:
+
+```python
+# Fill (background color)
+style.fill(
+    color="#RRGGBB"  # Hex color code, named color, or RGB value
+)
+# Examples:
+# style.fill(color="#E5E7EB")
+# style.fill(color="lightblue")
+# style.fill(color="rgb(255, 0, 0)")
+
+# Text styling
+style.text(
+    color=None,  # Text color (hex, named color, RGB)
+    font=None,  # Font family or google_font() object
+    size=None,  # Font size: "14px", "large", "x-small", etc.
+    align=None,  # "left", "center", "right", "justify"
+    v_align=None,  # "top", "middle", "bottom"
+    style=None,  # "normal", "italic", "oblique"
+    weight=None,  # "normal", "bold", "bolder", "lighter", or 100-900
+    stretch=None,  # "normal", "condensed", "expanded", etc., or "50%"-"200%"
+    decorate=None,  # "overline", "line-through", "underline", "underline overline"
+    transform=None,  # "uppercase", "lowercase", "capitalize"
+    whitespace=None  # "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces"
+)
+# Examples:
+# style.text(color="#DC2626", weight="bold", size="14px")
+# style.text(align="center", transform="uppercase")
+# style.text(font=google_font("Roboto"), style="italic")
+# style.text(decorate="underline", color="blue")
+
+# Borders
+style.borders(
+    sides="all",  # "all", "left", "right", "top", "bottom", or list of sides
+    color="#000000",  # Hex code, named color, or RGB value (default: "#000000" black)
+    weight="1px",  # Border width as string (default: "1px")
+    style="solid"  # "solid", "dashed", "dotted", "hidden", "double" (default: "solid")
+)
+# Examples:
+# style.borders(sides=["top", "bottom"], color="red", weight="2px")
+# style.borders(sides="all", style="dashed")
+# style.borders(sides="left", color="#3290CC", weight="3px", style="double")
+
+# Custom CSS
+style.css(
+    rule="custom-property: value;"  # Any valid CSS rule
+)
+# Use for CSS properties not covered by other style functions
+# Examples:
+# style.css("background-color: red;")
+# style.css("font-size: 14px; text-transform: uppercase;")
+# style.css("border-radius: 5px;")
+```
+
+**Critical Notes**:
+- There is NO `style.b()` function - use `style.text(weight="bold")`
+- There is NO `style.bold()` - use `style.text(weight="bold")`
+
+## Common Pitfalls (What NOT to do)
+
+### ❌ Methods That Don't Exist
+- `.tab_footnote()` - **DOES NOT EXIST**. Use `.tab_source_note()` for notes at bottom of table.
+- `.summary_rows()` and `.grand_summary_rows()`
+- `.text_transform()` - Use `.fmt()` with a custom function instead
+- `.style()` - Use `.tab_style()` instead
+
+### ❌ Wrong Location Functions
+- `loc.column_label()` (singular) - Use `loc.column_labels()` (plural) or `loc.column_header()`
+- `loc.spanner()` - Use `loc.spanner_labels()` instead
+
+### ❌ Wrong Style Functions
+- `style.b()` or `style.bold()` - Use `style.text(weight="bold")`
+
+### ❌ Parameters That Don't Exist
+- `escape=` in any method - This parameter doesn't exist
+- `where=` in `loc.body()` - Use `rows=` instead
+- `method=` in `.data_color()` - This parameter doesn't exist
+- `na_value=` - Use `na_color=` instead in `.data_color()`
+
+### ❌ Wrong Column References
+- Always verify column names exist in your DataFrame
+- Common mistake: assuming columns like 'issues', 'stock', 'open_issues' exist without checking
+
+### ❌ Wrong Import Patterns
+```python
+# ❌ WRONG
+from great_tables import GT, md, html
+from great_tables import loc, style
+
+# ✅ CORRECT
+from great_tables import GT, md, html, loc, style
+# OR
+from great_tables import GT, md, html
+from great_tables.loc import body, column_labels
+from great_tables.style import fill, text
+```
+
+### ❌ Wrong Style Shortcuts
+- `style.b()` → Use `style.text(weight="bold")`
+
+## Complete Working Example
+
+```python
+from great_tables import GT, style, loc
+import polars as pl
+
+# Load data
+df = pl.read_csv("data.csv")
+
+# Create table
+table = (
+    GT(df, rowname_col="name", groupname_col="category")
+    .tab_header(
+        title="Sales Data",
+        subtitle="Q4 2025"
+    )
+    .fmt_currency(columns="revenue", decimals=0)
+    .fmt_percent(columns="growth", decimals=1)
+    .data_color(
+        columns="growth",
+        palette=["red", "white", "green"],
+        domain=[-0.1, 0, 0.1]
+    )
+    .tab_style(
+        style=style.fill(color="lightyellow"),
+        locations=loc.body(rows=pl.col("revenue") > 1000000)
+    )
+    .tab_source_note("Source: Internal sales database")
+    .cols_label(
+        revenue="Revenue ($)",
+        growth="Growth Rate"
+    )
+)
+```
+
+## When Working with Real Data
+
+1. **Always verify column names**: Don't guess! Check `df.columns` first
+2. **Provide explicit schema**: Tell the LLM what columns exist
+3. **One step at a time**: Build complex tables incrementally
+4. **Test immediately**: Run code after each major addition
+
+## Format-Specific Notes
+
+### Currency Formatting
+```python
+.fmt_currency(
+    columns="amount",
+    currency="USD",      # Or "EUR", "GBP", etc.
+    decimals=2,
+    use_seps=True
+)
+```
+
+### Number Formatting
+```python
+.fmt_number(
+    columns="value",
+    decimals=1,
+    use_seps=True,       # Add thousand separators
+    compact=False        # If True, shows 1K, 1M, etc.
+)
+```
+
+### Conditional Formatting
+```python
+# Highlight rows based on condition
+.tab_style(
+    style=style.fill(color="mistyrose"),
+    locations=loc.body(
+        rows=pl.col("error_rate") > 0.05
+    )
+)
+
+# Color gradient
+.data_color(
+    columns="score",
+    palette=["white", "darkgreen"],
+    domain=[0, 100]      # Optional: explicit range
+)
+```
+
+## API Reference
+
+Full documentation: https://posit-dev.github.io/great-tables/reference/
+
+Key pages:
+- GT class: https://posit-dev.github.io/great-tables/reference/GT.html
+- Formatting methods: Search for "fmt_" on reference page
+- Location targeting: Search for "loc." on reference page
+- Style objects: Search for "style." on reference page
+
+## Success Checklist
+
+When generating Great Tables code:
+- [ ] Import from `great_tables` (not submodules)
+- [ ] Use correct method names (check against this guide)
+- [ ] Use `rows=` not `where=` in location targeting
+- [ ] Use `.tab_source_note()` not `.tab_footnote()`
+- [ ] Use `.tab_style()` not `.style()`
+- [ ] Verify column names exist in the data
+- [ ] Test the code before claiming it works
