@@ -3,6 +3,9 @@ title: "How to Get LLMs to Generate (Great) Great Tables Code (We Tested 3 Front
 author: Rich Iannone
 date: 2025-10-31
 jupyter: python3
+format:
+    html:
+        embed-resources: true
 html-table-processing: none
 ---
 
