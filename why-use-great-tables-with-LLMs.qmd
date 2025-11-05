@@ -330,3 +330,15 @@ Initial basic prompt:
 Create a simple Great Tables table from sales_data showing revenue formatted as a number.
 ```
 
+Initial LLM-generated code (basic):
+
+```python
+GT(sales_data).fmt_number(columns="revenue", decimals=0)
+```
+
+A follow-up prompt could be this:
+
+```
+Now add a title 'Q4 Sales Report', format revenue with thousands separators, add a growth column formatted as percentage, color-code the growth column from red to green, make the revenue column bold, and add a source note with today's date.
+```
+
