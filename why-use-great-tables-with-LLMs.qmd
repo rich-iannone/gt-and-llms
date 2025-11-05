@@ -22,3 +22,24 @@ Let's explore why Great Tables is the ideal choice when working with LLMs to ana
 ## The Progression: Text -> Markdown -> Great Tables
 
 To understand the value of Great Tables, let's see how the same information looks when presented in three different ways. We'll use a realistic scenario: analyzing GitHub repository metrics.
+
+### Stage 1: Paragraph Text
+
+Here's how an LLM might initially describe repository data:
+
+```
+The great-tables repository has 1,834 stars and 67 forks, with 23 open issues and 234 closed issues. It has merged 456 pull requests and the last commit was 2 days ago. The polars repository is much larger with 23,456 stars and 1,234 forks, currently has 345 open issues with 5,678 closed, has merged 8,934 pull requests, and was updated 1 day ago. The pandas repository is the largest with 38,934 stars...
+```
+
+The problem with this chunk of text is that it is exhausting to read. Finding patterns or comparing values requires some mental gymnastics here. You can't quickly spot which repos are most active or which need attention.
+
+### Stage 2: Markdown Table
+
+The natural next step is to structure this information in a table format. This is exactly what LLMs often do when you ask them to present data more clearly. Let's improve this with a Markdown table:
+Much better! The table structure makes comparisons easier. But we're still facing limitations:
+
+- numbers aren't formatted for readability (1834 vs 1,834)
+- no visual cues for what's important
+- can't highlight concerning patterns (old commits, high open issues)
+- static, so if data changes, you need to regenerate the entire table
+- no room for additional context (titles, footnotes, sources)
