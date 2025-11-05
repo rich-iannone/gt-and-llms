@@ -485,7 +485,7 @@ When you're analyzing data in a notebook with LLM assistance, you need tables th
 
 Markdown tables are fine for simple, static displays. But when you're doing real analysis work, Great Tables gives you high-quality output with programmatic control.
 
-Just as you'd use plotnine or seaborn for visualizations in your notebook, we believe that Great Tables is the right choice for tables. And when you combine it with LLM assistance, you get the best of both worlds: natural language specification with code-level control.
+Just as you'd use plotnine or seaborn for visualizations in your notebook, we believe that Great Tables is the right choice for tables. And when you combine it with LLM assistance, you get the best of both worlds: conversational specification with code-level control.
 
 The future of data analysis involves humans and LLMs working together. Great Tables is built for exactly this collaboration and it gives you the structure and tools you need while remaining accessible enough for LLMs to generate valid code.
 
