@@ -192,3 +192,9 @@ sales_data = pl.DataFrame({
 )
 ```
 
+The alternative in Markdown might be numbers presented like this:
+
+```
+Q1: 195, Q2: 210, Q3: 228, Q4: 245
+```
+
