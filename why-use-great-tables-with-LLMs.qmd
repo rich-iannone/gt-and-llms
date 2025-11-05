@@ -55,3 +55,11 @@ Much better! The table structure makes comparisons easier. But we're still facin
 - can't highlight concerning patterns (old commits, high open issues)
 - static, so if data changes, you need to regenerate the entire table
 - no room for additional context (titles, footnotes, sources)
+
+### Stage 3: Great Tables
+
+Now let's see the same data as a Great Tables table. Here's an example prompt you might use:
+
+```
+Create a Great Tables table from `data/github_repos.csv` showing repository metrics. Format the numbers with thousands separators, add a color gradient on the stars column (blue palette), and color-code the days since last commit (green for recent, red for old). Include a title, subtitle, and group the issues columns under a spanner labeled 'Issues'.
+```
