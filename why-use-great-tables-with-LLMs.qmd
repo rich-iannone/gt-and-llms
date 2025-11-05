@@ -342,3 +342,23 @@ A follow-up prompt could be this:
 Now add a title 'Q4 Sales Report', format revenue with thousands separators, add a growth column formatted as percentage, color-code the growth column from red to green, make the revenue column bold, and add a source note with today's date.
 ```
 
+The LLM extends the original code to this:
+
+```python
+(
+    GT(sales_data)
+    .tab_header(title="Q4 Sales Report")
+    .fmt_number(columns="revenue", decimals=0, use_seps=True)
+    .fmt_percent(columns="growth", decimals=1)
+    .data_color(columns="growth", palette=["red", "yellow", "green"])
+    .tab_style(
+        style=style.text(weight="bold"),
+        locations=loc.body(columns="revenue")
+    )
+    .tab_source_note("Internal data as of Nov 2025")
+)
+```
+
+This demonstrates the real power of Great Tables' compositional design. Extensions feel natural because each method call adds exactly one feature. You're building on a solid foundation rather than starting from scratch with each iteration. Typically, the LLM gives you about 70% of what you need, and you can refine the remaining 30% through simple additions.
+
+With Markdown you can't extend unless you want to type. You either regenerate the entire table or manually edit text (error-prone and not reproducible).
