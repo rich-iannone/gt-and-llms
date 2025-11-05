@@ -119,3 +119,13 @@ repos = pl.read_csv("data/github_repos.csv")
 )
 ```
 
+This is the sweet spot and we get:
+
+- visual hierarchy: color gradients instantly show popularity and recency
+- proper formatting: numbers with thousands separators
+- structure: spanners group related columns
+- context: title, subtitle, and source notes
+- reproducibility: change the data, run the code, get an updated table!
+- extensibility: easy to add styling, formatting, or new columns
+
+Most importantly: **you have the code**. This isn't just a pretty table. It's a recipe you can modify, reuse, and adapt.
