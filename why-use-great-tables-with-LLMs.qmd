@@ -322,3 +322,11 @@ This example showcases several structural features that make Great Tables partic
 
 Markdown tables have none of these features. You'd need to manually add separators, can't have multiple header rows, and have no built-in grouping mechanism.
 
+Here's a powerful advantage: once you have Great Tables code from an LLM, you can easily extend it.
+
+Initial basic prompt:
+
+```
+Create a simple Great Tables table from sales_data showing revenue formatted as a number.
+```
+
