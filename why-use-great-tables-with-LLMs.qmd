@@ -1,0 +1,11 @@
+---
+title: "Why Use Great Tables with LLMs?"
+author: Rich Iannone
+date: 2025-11-13
+jupyter: python3
+format:
+    html:
+        embed-resources: true
+html-table-processing: none
+---
+
