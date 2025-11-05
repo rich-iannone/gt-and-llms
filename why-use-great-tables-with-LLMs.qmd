@@ -275,3 +275,47 @@ Here's an example prompt:
 ```
 Create a Great Tables table from `data/tech_salaries.csv`. Group rows by role, format all compensation columns as currency, add a color gradient to the total compensation column (green shades). Use a spanner to group the compensation columns, and add source notes explaining the data source and abbreviations.
 ```
+
+```{python}
+# Tech salaries data
+salaries = pl.read_csv("data/tech_salaries.csv")
+
+(
+    GT(salaries, groupname_col="role")
+    .tab_header(
+        title="Tech Compensation by Role and Level",
+        subtitle="Major US tech companies, 2025"
+    )
+    .fmt_currency(
+        columns=["base_salary", "bonus", "equity", "total_comp"],
+        currency="USD",
+        decimals=0
+    )
+    .data_color(
+        columns="total_comp",
+        palette="Greens",
+        domain=[200000, 900000]
+    )
+    .cols_label(
+        level="Level",
+        base_salary="Base",
+        bonus="Bonus",
+        equity="Equity",
+        total_comp="Total",
+        yoe="YoE",
+        location="Location"
+    )
+    .tab_spanner(
+        label="Compensation Components",
+        columns=["base_salary", "bonus", "equity", "total_comp"]
+    )
+    .tab_source_note(
+        source_note="YoE = Years of Experience"
+    )
+    .tab_source_note(
+        source_note="Data aggregated from levels.fyi and Blind"
+    )
+)
+```
+
+This example showcases several structural features that make Great Tables particularly powerful. Row groups automatically organize entries by role, creating clear visual separation. Spanners group related columns under descriptive headers, making the compensation structure immediately clear. The title and subtitle provide essential context at a glance. Source notes add credibility and explain abbreviations like "YoE." And currency formatting ensures proper symbols and separators throughout.
