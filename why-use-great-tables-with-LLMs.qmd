@@ -198,3 +198,5 @@ The alternative in Markdown might be numbers presented like this:
 Q1: 195, Q2: 210, Q3: 228, Q4: 245
 ```
 
+This is functional but nowhere near as immediately comprehensible.
+
