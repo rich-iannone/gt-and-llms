@@ -214,7 +214,7 @@ This is functional but nowhere near as immediately comprehensible.
 
 ### 2. Conditional Formatting for Data Quality Checks
 
-LLMs are great at generating data summaries, but you need to quickly spot anomalies or issues. Great Tables makes this trivial.
+LLMs are great at generating data summaries, but you need to quickly spot anomalies or issues. Great Tables makes this sort of thing pretty trivial.
 
 Here's an example prompt:
 
