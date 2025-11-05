@@ -141,3 +141,54 @@ Here's an example prompt:
 
 ```
 I have sales data by region for Q4 2025. Create a Great Tables table that shows: region, current quarter sales (formatted with commas), a quarterly trend as a sparkline using fmt_nanoplot, and year-over-year growth as a percentage. Use a red-to-green color gradient on the growth column to highlight positive vs negative growth.
+```
+
+```{python}
+# Create sample data with trends
+sales_data = pl.DataFrame({
+    "region": ["North", "South", "East", "West", "Central"],
+    "current_quarter": [245000, 189000, 312000, 276000, 198000],
+    "trend": [
+        "195,210,228,245",
+        "212,198,185,189",
+        "278,289,301,312",
+        "245,258,271,276",
+        "178,185,192,198"
+    ],
+    "yoy_growth": [0.127, -0.043, 0.185, 0.098, 0.056]
+})
+
+(
+    GT(sales_data)
+    .tab_header(
+        title="Regional Sales Performance",
+        subtitle="Q4 2025 with quarterly trend"
+    )
+    .fmt_number(
+        columns="current_quarter",
+        decimals=0,
+        use_seps=True
+    )
+    .fmt_percent(
+        columns="yoy_growth",
+        decimals=1
+    )
+    .fmt_nanoplot(
+        columns="trend",
+        plot_type="line",
+        autoscale=True
+    )
+    .data_color(
+        columns="yoy_growth",
+        palette=["#FF6B6B", "#FFFFFF", "#90EE90"],
+        domain=[-0.1, 0.2]
+    )
+    .cols_label(
+        region="Region",
+        current_quarter="Q4 Sales",
+        trend="Quarterly Trend",
+        yoy_growth="YoY Growth"
+    )
+)
+```
+
