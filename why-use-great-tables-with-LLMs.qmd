@@ -411,21 +411,21 @@ GT(updated_data).fmt_number(columns="revenue", decimals=0)
 
 The code is a reusable recipe. Change the data, get a consistent table (no regeneration needed).
 
-With Markdown, you're starting over:
+With Markdown, you're essentially starting over and
 
 - asking the LLM to regenerate the entire table
 - hoping it formats the table consistently
 - manually verifying every number
 - taking a risk on inconsistent styling between versions
 
-This matters a lot because:
+Having code instead of static output fundamentally changes how you work:
 
 - your table definition becomes reusable infrastructure
-- weekly/monthly reports are trivial. Just swap the data
+- weekly/monthly reports are trivial (just swap the data!)
 - consistency across time periods is guaranteed
 - you can version control the recipe, not the output
 
-## The LLM Sweet Spot: Analysis → Code → Insight
+## The LLM Sweet Spot: Analysis -> Code -> Insight
 
 When you combine LLMs with Great Tables, you unlock a powerful iterative workflow that's greater than the sum of its parts. Instead of just asking for analysis or just asking for a table, you can have a conversation that progressively refines both the data understanding and its presentation. Here's what this workflow typically looks like in practice:
 
