@@ -388,3 +388,4 @@ With Markdown, you're starting over:
 - taking a risk on inconsistent styling between versions
 ## The LLM Sweet Spot: Analysis → Code → Insight
 
+When you combine LLMs with Great Tables, you unlock a powerful iterative workflow that's greater than the sum of its parts. Instead of just asking for analysis or just asking for a table, you can have a conversation that progressively refines both the data understanding and its presentation. Here's what this workflow typically looks like in practice:
