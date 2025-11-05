@@ -63,7 +63,11 @@ Much better! The table structure makes comparisons easier. But we're still facin
 Now let's see the same data as a Great Tables table. Here's an example prompt you might use:
 
 ```
-Create a Great Tables table from `data/github_repos.csv` showing repository metrics. Format the numbers with thousands separators, add a color gradient on the stars column (blue palette), and color-code the days since last commit (green for recent, red for old). Include a title, subtitle, and group the issues columns under a spanner labeled 'Issues'.
+Create a Great Tables table from `data/github_repos.csv` showing repository
+metrics. Format the numbers with thousands separators, add a color gradient on
+the stars column (blue palette), and color-code the days since last commit
+(green for recent, red for old). Include a title, subtitle, and group the
+issues columns under a spanner labeled 'Issues'.
 ```
 
 Here's what the LLM would generate:
@@ -145,7 +149,11 @@ Let's suppose you're asking an LLM to analyze quarterly sales trends. The LLM ca
 Here's an example prompt:
 
 ```
-I have sales data by region for Q4 2025. Create a Great Tables table that shows: region, current quarter sales (formatted with commas), a quarterly trend as a sparkline using fmt_nanoplot, and year-over-year growth as a percentage. Use a red-to-green color gradient on the growth column to highlight positive vs negative growth.
+I have sales data by region for Q4 2025. Create a Great Tables table that
+shows: region, current quarter sales (formatted with commas), a quarterly
+trend as a sparkline using fmt_nanoplot, and year-over-year growth as a
+percentage. Use a red-to-green color gradient on the growth column to
+highlight positive vs negative growth.
 ```
 
 ```{python}
@@ -219,7 +227,11 @@ LLMs are great at generating data summaries, but you need to quickly spot anomal
 Here's an example prompt:
 
 ```
-Load `data/api_latency.csv` and create a Great Tables table showing API endpoint performance. Calculate the error rate as a percentage. Use color gradients to highlight slow endpoints (p95_ms) and high error rates. Use green for good, yellow for concerning, red for critical. Format numbers appropriately and add a source note explaining the color coding.
+Load `data/api_latency.csv` and create a Great Tables table showing API
+endpoint performance. Calculate the error rate as a percentage. Use color
+gradients to highlight slow endpoints (p95_ms) and high error rates. Use
+green for good, yellow for concerning, red for critical. Format numbers
+appropriately and add a source note explaining the color coding.
 ```
 
 ```{python}
@@ -288,7 +300,10 @@ Great Tables supports structural elements that make complex tables comprehensibl
 Here's an example prompt:
 
 ```
-Create a Great Tables table from `data/tech_salaries.csv`. Group rows by role, format all compensation columns as currency, add a color gradient to the total compensation column (green shades). Use a spanner to group the compensation columns, and add source notes explaining the data source and abbreviations.
+Create a Great Tables table from `data/tech_salaries.csv`. Group rows by role,
+format all compensation columns as currency, add a color gradient to the total
+compensation column (green shades). Use a spanner to group the compensation
+columns, and add source notes explaining the data source and abbreviations.
 ```
 
 ```{python}
@@ -344,7 +359,8 @@ Here's a powerful advantage: once you have Great Tables code from an LLM, you ca
 Initial basic prompt:
 
 ```
-Create a simple Great Tables table from sales_data showing revenue formatted as a number.
+Create a simple Great Tables table from sales_data showing revenue formatted
+as a number.
 ```
 
 Initial LLM-generated code (basic):
@@ -356,7 +372,10 @@ GT(sales_data).fmt_number(columns="revenue", decimals=0)
 A follow-up prompt could be this:
 
 ```
-Now add a title 'Q4 Sales Report', format revenue with thousands separators, add a growth column formatted as percentage, color-code the growth column from red to green, make the revenue column bold, and add a source note with today's date.
+Now add a title 'Q4 Sales Report', format revenue with thousands separators,
+add a growth column formatted as percentage, color-code the growth column
+from red to green, make the revenue column bold, and add a source note with
+today's date.
 ```
 
 The LLM extends the original code to this:
