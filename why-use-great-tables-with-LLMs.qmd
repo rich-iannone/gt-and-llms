@@ -129,3 +129,15 @@ This is the sweet spot and we get:
 - extensibility: easy to add styling, formatting, or new columns
 
 Most importantly: **you have the code**. This isn't just a pretty table. It's a recipe you can modify, reuse, and adapt.
+Now that we've seen the basic progression from text to Markdown to Great Tables, let's dive into specific scenarios where this combination of LLM assistance and Great Tables functionality creates something truly powerful. Each scenario demonstrates a different strength of Great Tables that's particularly well-suited to LLM-generated content and human analytical needs.
+
+### 1. Trend Visualization with Nanoplots
+
+One of Great Tables' superpowers is `.fmt_nanoplot()`. This method provides the ability to embed sparklines directly in table cells. This is perfect for LLM-generated trend data.
+
+Let's suppose you're asking an LLM to analyze quarterly sales trends. The LLM can easily generate lists of numbers, but humans process visual trends far better than number sequences.
+
+Here's an example prompt:
+
+```
+I have sales data by region for Q4 2025. Create a Great Tables table that shows: region, current quarter sales (formatted with commas), a quarterly trend as a sparkline using fmt_nanoplot, and year-over-year growth as a percentage. Use a red-to-green color gradient on the growth column to highlight positive vs negative growth.
