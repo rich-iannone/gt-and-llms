@@ -9,3 +9,9 @@ format:
 html-table-processing: none
 ---
 
+## The Problem: LLMs Love Tables, But Notebooks Need Better
+
+If you've used Claude, ChatGPT, or other LLM interfaces lately, you've noticed something: they love presenting information in tables. And for good reason. Tables are incredibly effective at organizing structured information.
+
+But here's the disconnect: when you're analyzing data in a Python notebook, you need tables that live in your code, not just in a chat interface. You want the same control over tables that you have with plotnine or seaborn for visualizations. You want reproducible, extensible, and beautiful tables that work with your data pipelines.
+
