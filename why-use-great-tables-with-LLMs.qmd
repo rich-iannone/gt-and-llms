@@ -63,3 +63,56 @@ Now let's see the same data as a Great Tables table. Here's an example prompt yo
 ```
 Create a Great Tables table from `data/github_repos.csv` showing repository metrics. Format the numbers with thousands separators, add a color gradient on the stars column (blue palette), and color-code the days since last commit (green for recent, red for old). Include a title, subtitle, and group the issues columns under a spanner labeled 'Issues'.
 ```
+```{python}
+from great_tables import GT, md, html
+import polars as pl
+
+# Load the data
+repos = pl.read_csv("data/github_repos.csv")
+
+# Create a Great Tables table
+(
+    GT(repos)
+    .tab_header(
+        title="GitHub Repository Metrics",
+        subtitle="Popular data science and visualization libraries"
+    )
+    .fmt_number(
+        columns=["stars", "forks", "issues_open", "issues_closed", "prs_merged"],
+        decimals=0,
+        use_seps=True
+    )
+    .data_color(
+        columns="stars",
+        palette="Blues",
+        domain=[0, 40000]
+    )
+    .data_color(
+        columns="last_commit_days",
+        palette=["#90EE90", "#FFD700", "#FF6B6B"],
+        domain=[0, 7]
+    )
+    .cols_label(
+        repo="Repository",
+        language="Language",
+        stars="Stars",
+        forks="Forks",
+        issues_open="Open",
+        issues_closed="Closed",
+        prs_merged="Merged",
+        last_commit_days="Days Since Commit"
+    )
+    .tab_spanner(
+        label="Issues",
+        columns=["issues_open", "issues_closed"]
+    )
+    .tab_spanner(
+        label="Activity",
+        columns=["prs_merged", "last_commit_days"]
+    )
+    .tab_source_note(
+        source_note="Data collected from GitHub API on November 5, 2025"
+    )
+)
+```
+
