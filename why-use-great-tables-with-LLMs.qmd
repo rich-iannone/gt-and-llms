@@ -458,6 +458,8 @@ Based on our experience, here are key strategies:
 
 5. **Leverage nanoplots**: If you have time-series or trend data, explicitly ask for sparklines: "Add a trend column using fmt_nanoplot"
 
+6. **Provide data context**: Share the data structure or a few sample rows so the LLM knows what columns are available
+
 ## Conclusion: The Right Tool for the Job
 
 When you're analyzing data in a notebook with LLM assistance, you need tables that are:
