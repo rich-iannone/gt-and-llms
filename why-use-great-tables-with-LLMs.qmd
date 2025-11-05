@@ -429,3 +429,4 @@ Markdown tables are fine for simple, static displays. But when you're doing real
 
 The future of data analysis involves humans and LLMs working together. Great Tables is built for exactly this collaboration and it gives you the structure and tools you need while remaining accessible enough for LLMs to generate valid code.
 
+Try it out in your next notebook. Ask your favorite LLM to create a Great Tables table from your data. You might be surprised how well it works! And you'll likely be delighted with how much more effective your tables become.
