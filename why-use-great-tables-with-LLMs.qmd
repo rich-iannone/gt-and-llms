@@ -200,3 +200,13 @@ Q1: 195, Q2: 210, Q3: 228, Q4: 245
 
 This is functional but nowhere near as immediately comprehensible.
 
+### 2. Conditional Formatting for Data Quality Checks
+
+LLMs are great at generating data summaries, but you need to quickly spot anomalies or issues. Great Tables makes this trivial.
+
+Here's an example prompt:
+
+```
+Load `data/api_latency.csv` and create a Great Tables table showing API endpoint performance. Calculate the error rate as a percentage. Use color gradients to highlight slow endpoints (p95_ms) and high error rates. Use green for good, yellow for concerning, red for critical. Format numbers appropriately and add a source note explaining the color coding.
+```
+
