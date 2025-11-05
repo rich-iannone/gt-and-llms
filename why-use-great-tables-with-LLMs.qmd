@@ -456,6 +456,8 @@ Based on our experience, here are key strategies:
 
 4. **Iterate compositionally**: Start simple, then ask for additions: "Now add a title and source note"
 
+5. **Leverage nanoplots**: If you have time-series or trend data, explicitly ask for sparklines: "Add a trend column using fmt_nanoplot"
+
 ## Conclusion: The Right Tool for the Job
 
 When you're analyzing data in a notebook with LLM assistance, you need tables that are:
