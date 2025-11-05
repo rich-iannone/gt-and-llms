@@ -265,3 +265,4 @@ api_data = api_data.with_columns(
 )
 ```
 
+In contrast, Markdown tables fall short here. Static text simply can't convey urgency or priority. You'd have to manually scan each row, comparing numbers mentally, and hope you catch the problematic patterns.
