@@ -156,6 +156,8 @@ percentage. Use a red-to-green color gradient on the growth column to
 highlight positive vs negative growth.
 ```
 
+Here's what the LLM would generate:
+
 ```{python}
 # Create sample data with trends
 sales_data = pl.DataFrame({
