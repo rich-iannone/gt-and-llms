@@ -210,3 +210,58 @@ Here's an example prompt:
 Load `data/api_latency.csv` and create a Great Tables table showing API endpoint performance. Calculate the error rate as a percentage. Use color gradients to highlight slow endpoints (p95_ms) and high error rates. Use green for good, yellow for concerning, red for critical. Format numbers appropriately and add a source note explaining the color coding.
 ```
 
+```{python}
+# API latency data
+api_data = pl.read_csv("data/api_latency.csv")
+
+# Calculate error rate
+api_data = api_data.with_columns(
+    (pl.col("errors") / pl.col("requests") * 100).alias("error_rate")
+)
+
+(
+    GT(api_data)
+    .tab_header(
+        title="API Endpoint Performance",
+        subtitle="Production metrics from last 24 hours"
+    )
+    .fmt_number(
+        columns=["avg_ms", "p95_ms", "p99_ms"],
+        decimals=0
+    )
+    .fmt_number(
+        columns="requests",
+        decimals=0,
+        use_seps=True
+    )
+    .fmt_percent(
+        columns="error_rate",
+        decimals=2,
+        scale_values=False
+    )
+    .data_color(
+        columns="p95_ms",
+        palette=["#90EE90", "#FFD700", "#FF6B6B"],
+        domain=[0, 1500]
+    )
+    .data_color(
+        columns="error_rate",
+        palette=["#90EE90", "#FFD700", "#FF6B6B"],
+        domain=[0, 1.0]
+    )
+    .cols_label(
+        endpoint="Endpoint",
+        method="Method",
+        avg_ms="Avg (ms)",
+        p95_ms="P95 (ms)",
+        p99_ms="P99 (ms)",
+        requests="Requests",
+        errors="Errors",
+        error_rate="Error Rate"
+    )
+    .tab_source_note(
+        source_note="Red indicates endpoints exceeding SLA thresholds"
+    )
+)
+```
+
