@@ -149,11 +149,12 @@ Let's suppose you're asking an LLM to analyze quarterly sales trends. The LLM ca
 Here's an example prompt:
 
 ```
-I have sales data by region for Q4 2025. Create a Great Tables table that
-shows: region, current quarter sales (formatted with commas), a quarterly
-trend as a sparkline using fmt_nanoplot, and year-over-year growth as a
-percentage. Use a red-to-green color gradient on the growth column to
-highlight positive vs negative growth.
+Load `data/sales_trends.csv`, which is sales data by region for Q4 2025.
+Create a Great Tables table that shows: region, current quarter sales
+(formatted with commas), a quarterly trend as a sparkline using
+fmt_nanoplot, and year-over-year growth as a percentage. Use a
+red-to-green color gradient on the growth column to highlight positive
+vs negative growth.
 ```
 
 Here's what the LLM would generate:
