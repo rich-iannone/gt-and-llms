@@ -1,0 +1,479 @@
+---
+title: "Why Use Great Tables with LLMs?"
+author: Rich Iannone
+date: 2025-11-13
+jupyter: python3
+format:
+    html:
+        embed-resources: true
+html-table-processing: none
+---
+
+## The Problem: LLMs Love Tables, But Notebooks Need Better
+
+If you've used Claude, ChatGPT, or other LLM interfaces lately, you've noticed something: they love presenting information in tables. And for good reason. Tables are incredibly effective at organizing structured information.
+
+But here's the disconnect: when you're analyzing data in a Python notebook, you need tables that live in your code, not just in a chat interface. You want the same control over tables that you have with plotnine or seaborn for visualizations. You want reproducible, extensible, and beautiful tables that work with your data pipelines.
+
+This is where Great Tables shines. Great Tables is a Python library designed for quickly generating sophisticated tables in your notebook, whether you're writing the code yourself or working with an LLM assistant. More importantly, it gives you something Markdown tables can't: a programmatic recipe that adapts to your data and extends with your needs.
+
+Let's explore why Great Tables is the ideal choice when working with LLMs to analyze and present data.
+
+## The Progression: Text -> Markdown -> Great Tables
+
+To understand the value of Great Tables, let's see how the same information looks when presented in three different ways. We'll use a realistic scenario: analyzing GitHub repository metrics.
+
+### Stage 1: Paragraph Text
+
+Here's how an LLM might initially describe repository data:
+
+```
+The great-tables repository has 1,834 stars and 67 forks, with 23 open issues and 234 closed issues. It has merged 456 pull requests and the last commit was 2 days ago. The polars repository is much larger with 23,456 stars and 1,234 forks, currently has 345 open issues with 5,678 closed, has merged 8,934 pull requests, and was updated 1 day ago. The pandas repository is the largest with 38,934 stars...
+```
+
+The problem with this chunk of text is that it is exhausting to read. Finding patterns or comparing values requires some mental gymnastics here. You can't quickly spot which repos are most active or which need attention.
+
+### Stage 2: Markdown Table
+
+The natural next step is to structure this information in a table format. This is exactly what LLMs often do when you ask them to present data more clearly. Let's improve this with a Markdown table:
+
+```markdown
+| Repository | Language | Stars | Forks | Open Issues | Closed Issues | PRs Merged | Days Since Commit |
+|------------|----------|-------|-------|-------------|---------------|------------|-------------------|
+| great-tables | Python | 1834 | 67 | 23 | 234 | 456 | 2 |
+| polars | Rust | 23456 | 1234 | 345 | 5678 | 8934 | 1 |
+| pandas | Python | 38934 | 15678 | 2345 | 23456 | 12345 | 3 |
+| duckdb | C++ | 15234 | 890 | 123 | 3456 | 5678 | 1 |
+| quarto-cli | TypeScript | 8234 | 456 | 89 | 1234 | 2345 | 5 |
+| plotly.py | Python | 13456 | 2345 | 234 | 4567 | 6789 | 4 |
+```
+
+Much better! The table structure makes comparisons easier. But we're still facing limitations:
+
+- numbers aren't formatted for readability (1834 vs 1,834)
+- no visual cues for what's important
+- can't highlight concerning patterns (old commits, high open issues)
+- static, so if data changes, you need to regenerate the entire table
+- no room for additional context (titles, footnotes, sources)
+
+### Stage 3: Great Tables
+
+Now let's see the same data as a Great Tables table. Here's an example prompt you might use:
+
+```
+Create a Great Tables table from `data/github_repos.csv` showing repository metrics. Format the numbers with thousands separators, add a color gradient on the stars column (blue palette), and color-code the days since last commit (green for recent, red for old). Include a title, subtitle, and group the issues columns under a spanner labeled 'Issues'.
+```
+
+Here's what the LLM would generate:
+
+```{python}
+from great_tables import GT, md, html
+import polars as pl
+
+# Load the data
+repos = pl.read_csv("data/github_repos.csv")
+
+# Create a Great Tables table
+(
+    GT(repos)
+    .tab_header(
+        title="GitHub Repository Metrics",
+        subtitle="Popular data science and visualization libraries"
+    )
+    .fmt_number(
+        columns=["stars", "forks", "issues_open", "issues_closed", "prs_merged"],
+        decimals=0,
+        use_seps=True
+    )
+    .data_color(
+        columns="stars",
+        palette="Blues",
+        domain=[0, 40000]
+    )
+    .data_color(
+        columns="last_commit_days",
+        palette=["#90EE90", "#FFD700", "#FF6B6B"],
+        domain=[0, 7]
+    )
+    .cols_label(
+        repo="Repository",
+        language="Language",
+        stars="Stars",
+        forks="Forks",
+        issues_open="Open",
+        issues_closed="Closed",
+        prs_merged="Merged",
+        last_commit_days="Days Since Commit"
+    )
+    .tab_spanner(
+        label="Issues",
+        columns=["issues_open", "issues_closed"]
+    )
+    .tab_spanner(
+        label="Activity",
+        columns=["prs_merged", "last_commit_days"]
+    )
+    .tab_source_note(
+        source_note="Data collected from GitHub API on November 5, 2025"
+    )
+)
+```
+
+This is the sweet spot and we get:
+
+- visual hierarchy: color gradients instantly show popularity and recency
+- proper formatting: numbers with thousands separators
+- structure: spanners group related columns
+- context: title, subtitle, and source notes
+- reproducibility: change the data, run the code, get an updated table!
+- extensibility: easy to add styling, formatting, or new columns
+
+Most importantly: **you have the code**. This isn't just a pretty table. It's a recipe you can modify, reuse, and adapt.
+
+## Why Great Tables Works Great with LLMs: Five Key Scenarios
+
+Now that we've seen the basic progression from text to Markdown to Great Tables, let's dive into specific scenarios where this combination of LLM assistance and Great Tables functionality creates something truly powerful. Each scenario demonstrates a different strength of Great Tables that's particularly well-suited to LLM-generated content and human analytical needs.
+
+### 1. Trend Visualization with Nanoplots
+
+One of Great Tables' superpowers is `.fmt_nanoplot()`. This method provides the ability to embed sparklines directly in table cells. This is perfect for LLM-generated trend data.
+
+Let's suppose you're asking an LLM to analyze quarterly sales trends. The LLM can easily generate lists of numbers, but humans process visual trends far better than number sequences.
+
+Here's an example prompt:
+
+```
+I have sales data by region for Q4 2025. Create a Great Tables table that shows: region, current quarter sales (formatted with commas), a quarterly trend as a sparkline using fmt_nanoplot, and year-over-year growth as a percentage. Use a red-to-green color gradient on the growth column to highlight positive vs negative growth.
+```
+
+```{python}
+# Create sample data with trends
+sales_data = pl.DataFrame({
+    "region": ["North", "South", "East", "West", "Central"],
+    "current_quarter": [245000, 189000, 312000, 276000, 198000],
+    "trend": [
+        "195,210,228,245",
+        "212,198,185,189",
+        "278,289,301,312",
+        "245,258,271,276",
+        "178,185,192,198"
+    ],
+    "yoy_growth": [0.127, -0.043, 0.185, 0.098, 0.056]
+})
+
+(
+    GT(sales_data)
+    .tab_header(
+        title="Regional Sales Performance",
+        subtitle="Q4 2025 with quarterly trend"
+    )
+    .fmt_number(
+        columns="current_quarter",
+        decimals=0,
+        use_seps=True
+    )
+    .fmt_percent(
+        columns="yoy_growth",
+        decimals=1
+    )
+    .fmt_nanoplot(
+        columns="trend",
+        plot_type="line",
+        autoscale=True
+    )
+    .data_color(
+        columns="yoy_growth",
+        palette=["#FF6B6B", "#FFFFFF", "#90EE90"],
+        domain=[-0.1, 0.2]
+    )
+    .cols_label(
+        region="Region",
+        current_quarter="Q4 Sales",
+        trend="Quarterly Trend",
+        yoy_growth="YoY Growth"
+    )
+)
+```
+
+Why does this matter? There are a few good reasons: 
+
+- LLMs can easily generate comma-separated trend values (e.g., "195,210,228,245")
+- Great Tables transforms these strings into visual sparklines
+- You get instant visual verification of trends. Is the South region really declining? Yes, the sparkline shows it clearly
+- This bridges the gap between LLM text generation and human visual processing
+
+The alternative in Markdown might be numbers presented like this:
+
+```
+Q1: 195, Q2: 210, Q3: 228, Q4: 245
+```
+
+This is functional but nowhere near as immediately comprehensible.
+
+### 2. Conditional Formatting for Data Quality Checks
+
+LLMs are great at generating data summaries, but you need to quickly spot anomalies or issues. Great Tables makes this trivial.
+
+Here's an example prompt:
+
+```
+Load `data/api_latency.csv` and create a Great Tables table showing API endpoint performance. Calculate the error rate as a percentage. Use color gradients to highlight slow endpoints (p95_ms) and high error rates. Use green for good, yellow for concerning, red for critical. Format numbers appropriately and add a source note explaining the color coding.
+```
+
+```{python}
+# API latency data
+api_data = pl.read_csv("data/api_latency.csv")
+
+# Calculate error rate
+api_data = api_data.with_columns(
+    (pl.col("errors") / pl.col("requests") * 100).alias("error_rate")
+)
+
+(
+    GT(api_data)
+    .tab_header(
+        title="API Endpoint Performance",
+        subtitle="Production metrics from last 24 hours"
+    )
+    .fmt_number(
+        columns=["avg_ms", "p95_ms", "p99_ms"],
+        decimals=0
+    )
+    .fmt_number(
+        columns="requests",
+        decimals=0,
+        use_seps=True
+    )
+    .fmt_percent(
+        columns="error_rate",
+        decimals=2,
+        scale_values=False
+    )
+    .data_color(
+        columns="p95_ms",
+        palette=["#90EE90", "#FFD700", "#FF6B6B"],
+        domain=[0, 1500]
+    )
+    .data_color(
+        columns="error_rate",
+        palette=["#90EE90", "#FFD700", "#FF6B6B"],
+        domain=[0, 1.0]
+    )
+    .cols_label(
+        endpoint="Endpoint",
+        method="Method",
+        avg_ms="Avg (ms)",
+        p95_ms="P95 (ms)",
+        p99_ms="P99 (ms)",
+        requests="Requests",
+        errors="Errors",
+        error_rate="Error Rate"
+    )
+    .tab_source_note(
+        source_note="Red indicates endpoints exceeding SLA thresholds"
+    )
+)
+```
+
+This approach is powerful for several reasons. Color gradients instantly highlight problem areas like slow endpoints and high error rates. You can immediately see that `/api/upload` needs attention without scanning every row. The LLM generates the data and basic structure, while Great Tables adds the intelligence layer through conditional formatting. Proper formatting with thousands separators and percentages makes numbers instantly scannable.
+
+In contrast, Markdown tables fall short here. Static text simply can't convey urgency or priority. You'd have to manually scan each row, comparing numbers mentally, and hope you catch the problematic patterns.
+
+### 3. Rich Structure That Markdown Can't Provide
+
+Great Tables supports structural elements that make complex tables comprehensible.
+
+Here's an example prompt:
+
+```
+Create a Great Tables table from `data/tech_salaries.csv`. Group rows by role, format all compensation columns as currency, add a color gradient to the total compensation column (green shades). Use a spanner to group the compensation columns, and add source notes explaining the data source and abbreviations.
+```
+
+```{python}
+# Tech salaries data
+salaries = pl.read_csv("data/tech_salaries.csv")
+
+(
+    GT(salaries, groupname_col="role")
+    .tab_header(
+        title="Tech Compensation by Role and Level",
+        subtitle="Major US tech companies, 2025"
+    )
+    .fmt_currency(
+        columns=["base_salary", "bonus", "equity", "total_comp"],
+        currency="USD",
+        decimals=0
+    )
+    .data_color(
+        columns="total_comp",
+        palette="Greens",
+        domain=[200000, 900000]
+    )
+    .cols_label(
+        level="Level",
+        base_salary="Base",
+        bonus="Bonus",
+        equity="Equity",
+        total_comp="Total",
+        yoe="YoE",
+        location="Location"
+    )
+    .tab_spanner(
+        label="Compensation Components",
+        columns=["base_salary", "bonus", "equity", "total_comp"]
+    )
+    .tab_source_note(
+        source_note="YoE = Years of Experience"
+    )
+    .tab_source_note(
+        source_note="Data aggregated from levels.fyi and Blind"
+    )
+)
+```
+
+This example showcases several structural features that make Great Tables particularly powerful. Row groups automatically organize entries by role, creating clear visual separation. Spanners group related columns under descriptive headers, making the compensation structure immediately clear. The title and subtitle provide essential context at a glance. Source notes add credibility and explain abbreviations like "YoE." And currency formatting ensures proper symbols and separators throughout.
+
+Markdown tables have none of these features. You'd need to manually add separators, can't have multiple header rows, and have no built-in grouping mechanism.
+
+### 4. Extensibility: Start Simple, Add Sophistication
+
+Here's a powerful advantage: once you have Great Tables code from an LLM, you can easily extend it.
+
+Initial basic prompt:
+
+```
+Create a simple Great Tables table from sales_data showing revenue formatted as a number.
+```
+
+Initial LLM-generated code (basic):
+
+```python
+GT(sales_data).fmt_number(columns="revenue", decimals=0)
+```
+
+A follow-up prompt could be this:
+
+```
+Now add a title 'Q4 Sales Report', format revenue with thousands separators, add a growth column formatted as percentage, color-code the growth column from red to green, make the revenue column bold, and add a source note with today's date.
+```
+
+The LLM extends the original code to this:
+
+```python
+(
+    GT(sales_data)
+    .tab_header(title="Q4 Sales Report")
+    .fmt_number(columns="revenue", decimals=0, use_seps=True)
+    .fmt_percent(columns="growth", decimals=1)
+    .data_color(columns="growth", palette=["red", "yellow", "green"])
+    .tab_style(
+        style=style.text(weight="bold"),
+        locations=loc.body(columns="revenue")
+    )
+    .tab_source_note("Internal data as of Nov 2025")
+)
+```
+
+This demonstrates the real power of Great Tables' compositional design. Extensions feel natural because each method call adds exactly one feature. You're building on a solid foundation rather than starting from scratch with each iteration. Typically, the LLM gives you about 70% of what you need, and you can refine the remaining 30% through simple additions.
+
+With Markdown you can't extend unless you want to type. You either regenerate the entire table or manually edit text (error-prone and not reproducible).
+
+### 5. Data Updates: Reproducibility is Everything
+
+Perhaps the most underrated advantage: Great Tables code is a *recipe* (not merely a *result*).
+
+Here's a scenario that comes up constantly in real work. You asked an LLM to create a table from Q3 sales data, and it gave you working code. Now it's Q4 and you have new data in the same format. What do you do?
+
+With Great Tables, you simply point the existing code at the new data:
+
+```python
+# Original Q3 code that the LLM generated
+# q3_data = pl.read_csv("data/q3_sales.csv")
+# GT(q3_data).fmt_number(columns="revenue", decimals=0)
+
+# Q4: Just swap the data source
+updated_data = pl.read_csv("data/q4_sales.csv")
+GT(updated_data).fmt_number(columns="revenue", decimals=0)
+```
+
+The code is a reusable recipe. Change the data, get a consistent table (no regeneration needed).
+
+With Markdown, you're starting over:
+
+- asking the LLM to regenerate the entire table
+- hoping it formats the table consistently
+- manually verifying every number
+- taking a risk on inconsistent styling between versions
+
+This matters a lot because:
+
+- your table definition becomes reusable infrastructure
+- weekly/monthly reports are trivial. Just swap the data
+- consistency across time periods is guaranteed
+- you can version control the recipe, not the output
+
+## The LLM Sweet Spot: Analysis → Code → Insight
+
+When you combine LLMs with Great Tables, you unlock a powerful iterative workflow that's greater than the sum of its parts. Instead of just asking for analysis or just asking for a table, you can have a conversation that progressively refines both the data understanding and its presentation. Here's what this workflow typically looks like in practice:
+
+Here's how Great Tables fits into this workflow:
+
+1. **You**: "Analyze these sales trends and create a table showing regions, current quarter sales, and trend sparklines"
+
+2. **LLM**: generates trend values and Great Tables code with `.fmt_nanoplot()`
+
+3. **You**: see visual trends immediately, spot the declining region, ask follow-up questions
+
+4. **LLM**: updates the code to add conditional formatting on the declining region
+
+5. **Result**: a publication-ready table that's also a reproducible recipe
+
+This workflow is impossible with Markdown tables. You'd be stuck asking the LLM to describe trends in text or regenerating static tables repeatedly.
+
+## Human Visual Processing > Text Processing
+
+Humans are visual creatures. We process information much faster when it's presented visually rather than via text. Consider this example:
+
+**Text description**: "The upload endpoint has an average latency of 1,243ms with a P95 of 2,456ms and an error rate of 5.1%, which is significantly higher than other endpoints..."
+
+**Markdown table**: Better, but you still need to scan and compare numbers mentally.
+
+**Great Tables with color gradients**: Instant visual hit as red cells jump out immediately. You know there's a problem before you even read the numbers.
+
+LLMs are great at generating structured text, but they can't see the output the way humans do. Great Tables bridges this gap by transforming LLM-generated structured data into visually optimized presentations.
+
+## Practical Tips for Using Great Tables with LLMs
+
+After working extensively with LLMs to generate Great Tables code, we've learned what works well and what doesn't. The key is being specific about what you want while leveraging the compositional nature of the API. Here are the strategies that consistently produce the best results:
+
+Based on our experience, here are key strategies:
+
+1. **Ask for Great Tables code directly**: "Create a Great Tables table with..." works well with modern LLMs
+
+2. **Specify formatting needs**: "Format currency with thousands separators" or "Add color gradients to highlight outliers"
+
+3. **Request structural elements**: "Add a spanner for financial columns" or "Group rows by department"
+
+4. **Iterate compositionally**: Start simple, then ask for additions: "Now add a title and source note"
+
+5. **Leverage nanoplots**: If you have time-series or trend data, explicitly ask for sparklines: "Add a trend column using fmt_nanoplot"
+
+6. **Provide data context**: Share the data structure or a few sample rows so the LLM knows what columns are available
+
+## Conclusion: The Right Tool for the Job
+
+When you're analyzing data in a notebook with LLM assistance, you need tables that are:
+
+- Visual: easy for humans to process at a glance
+- Reproducible: run the same code with new data
+- Extensible: start simple, add sophistication as needed
+- Structured: support titles, groups, spanners, footnotes
+- Intelligent: conditional formatting, color gradients, sparklines
+
+Markdown tables are fine for simple, static displays. But when you're doing real analysis work, Great Tables gives you high-quality output with programmatic control.
+
+Just as you'd use plotnine or seaborn for visualizations in your notebook, we believe that Great Tables is the right choice for tables. And when you combine it with LLM assistance, you get the best of both worlds: natural language specification with code-level control.
+
+The future of data analysis involves humans and LLMs working together. Great Tables is built for exactly this collaboration and it gives you the structure and tools you need while remaining accessible enough for LLMs to generate valid code.
+
+Try it out in your next notebook. Ask your favorite LLM to create a Great Tables table from your data. You might be surprised how well it works! And you'll likely be delighted with how much more effective your tables become.
