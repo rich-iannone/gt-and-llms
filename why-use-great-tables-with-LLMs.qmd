@@ -386,3 +386,5 @@ With Markdown, you're starting over:
 - hoping it formats the table consistently
 - manually verifying every number
 - taking a risk on inconsistent styling between versions
+## The LLM Sweet Spot: Analysis → Code → Insight
+
