@@ -159,19 +159,8 @@ highlight positive vs negative growth.
 Here's what the LLM would generate:
 
 ```{python}
-# Create sample data with trends
-sales_data = pl.DataFrame({
-    "region": ["North", "South", "East", "West", "Central"],
-    "current_quarter": [245000, 189000, 312000, 276000, 198000],
-    "trend": [
-        "195,210,228,245",
-        "212,198,185,189",
-        "278,289,301,312",
-        "245,258,271,276",
-        "178,185,192,198"
-    ],
-    "yoy_growth": [0.127, -0.043, 0.185, 0.098, 0.056]
-})
+# Load sales data with trends
+sales_data = pl.read_csv("data/sales_trends.csv")
 
 (
     GT(sales_data)
