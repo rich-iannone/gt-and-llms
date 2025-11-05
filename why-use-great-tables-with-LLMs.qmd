@@ -28,7 +28,11 @@ To understand the value of Great Tables, let's see how the same information look
 Here's how an LLM might initially describe repository data:
 
 ```
-The great-tables repository has 1,834 stars and 67 forks, with 23 open issues and 234 closed issues. It has merged 456 pull requests and the last commit was 2 days ago. The polars repository is much larger with 23,456 stars and 1,234 forks, currently has 345 open issues with 5,678 closed, has merged 8,934 pull requests, and was updated 1 day ago. The pandas repository is the largest with 38,934 stars...
+The great-tables repository has 1,834 stars and 67 forks, with 23 open issues and
+234 closed issues. It has merged 456 pull requests and the last commit was 2 days
+ago. The polars repository is much larger with 23,456 stars and 1,234 forks,
+currently has 345 open issues with 5,678 closed, has merged 8,934 pull requests,
+and was updated 1 day ago. The pandas repository is the largest with 38,934 stars...
 ```
 
 The problem with this chunk of text is that it is exhausting to read. Finding patterns or comparing values requires some mental gymnastics here. You can't quickly spot which repos are most active or which need attention.
