@@ -427,3 +427,5 @@ When you're analyzing data in a notebook with LLM assistance, you need tables th
 
 Markdown tables are fine for simple, static displays. But when you're doing real analysis work, Great Tables gives you high-quality output with programmatic control.
 
+The future of data analysis involves humans and LLMs working together. Great Tables is built for exactly this collaboration and it gives you the structure and tools you need while remaining accessible enough for LLMs to generate valid code.
+
