@@ -485,11 +485,11 @@ Based on our experience, here are key strategies:
 
 When you're analyzing data in a notebook with LLM assistance, you need tables that are:
 
-- Visual: easy for humans to process at a glance
-- Reproducible: run the same code with new data
-- Extensible: start simple, add sophistication as needed
-- Structured: support titles, groups, spanners, footnotes
-- Intelligent: conditional formatting, color gradients, sparklines
+- visual: easy for humans to process at a glance
+- reproducible: run the same code with new data
+- extensible: start simple, add sophistication as needed
+- structured: support titles, groups, spanners, footnotes
+- intelligent: conditional formatting, color gradients, sparklines
 
 Markdown tables are fine for simple, static displays. But when you're doing real analysis work, Great Tables gives you high-quality output with programmatic control.
 
