@@ -13,9 +13,9 @@ html-table-processing: none
 
 If you've used Claude, ChatGPT, or other LLM interfaces lately, you've noticed something: they love presenting information in tables. And for good reason. Tables are incredibly effective at organizing structured information.
 
-But here's the disconnect: when you're analyzing data in a Python notebook, you need tables that live in your code, not just in a chat interface. You want the same control over tables that you have with plotnine or seaborn for visualizations. You want reproducible, extensible, and beautiful tables that work with your data pipelines.
+But here's the disconnect: when you're analyzing data in a Python notebook, you need tables that live in your code, not just in a chat interface. You want the same control over tables that you have with [plotnine](https://plotnine.org) or [seaborn](https://seaborn.pydata.org) for visualizations. You want reproducible, extensible, and beautiful tables that work with your data pipelines.
 
-This is where Great Tables shines. Great Tables is a Python library designed for quickly generating sophisticated tables in your notebook, whether you're writing the code yourself or working with an LLM assistant. More importantly, it gives you something Markdown tables can't: a programmatic recipe that adapts to your data and extends with your needs.
+This is where [Great Tables](https://posit-dev.github.io/great-tables/) shines. Great Tables is a Python library designed for quickly generating sophisticated tables in your notebook, whether you're writing the code yourself or working with an LLM assistant. More importantly, it gives you something Markdown tables can't: a programmatic recipe that adapts to your data and extends with your needs.
 
 Let's explore why Great Tables is the ideal choice when working with LLMs to analyze and present data.
 
