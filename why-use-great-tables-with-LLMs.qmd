@@ -447,33 +447,37 @@ This workflow is impossible with Markdown tables. You'd be stuck asking the LLM 
 
 Humans are visual creatures. We process information much faster when it's presented visually rather than via text. Consider this example:
 
-**Text description**: "The upload endpoint has an average latency of 1,243ms with a P95 of 2,456ms and an error rate of 5.1%, which is significantly higher than other endpoints..."
+**Text description** 
 
-**Markdown table**: Better, but you still need to scan and compare numbers mentally.
+`"The upload endpoint has an average latency of 1,243ms with a P95 of 2,456ms and an error rate of 5.1%, which is significantly higher than other endpoints..."`
 
-**Great Tables with color gradients**: Instant visual hit as red cells jump out immediately. You know there's a problem before you even read the numbers.
+**Markdown table**
+
+Better, but you still need to scan and compare numbers mentally.
+
+**Great Tables with color gradients**
+
+Instant visual hit as red cells will jump out immediately. You know there's a problem before you even read the numbers.
 
 LLMs are great at generating structured text, but they can't see the output the way humans do. Great Tables bridges this gap by transforming LLM-generated structured data into visually optimized presentations.
 
 ## Practical Tips for Using Great Tables with LLMs
 
-After working extensively with LLMs to generate Great Tables code, we've learned what works well and what doesn't. The key is being specific about what you want while leveraging the compositional nature of the API. Here are the strategies that consistently produce the best results:
+After working extensively with LLMs to generate Great Tables code, I've begun to figure out what works well and what doesn't. The key is being specific about what you want while leveraging the compositional nature of the API. Here are some of the strategies that worked for me in producing the best results:
 
-Based on our experience, here are key strategies:
+1. ask for Great Tables code directly: `"Create a Great Tables table with..."` works well with modern LLMs
 
-1. **Ask for Great Tables code directly**: "Create a Great Tables table with..." works well with modern LLMs
+2. specify formatting needs: `"Format currency with thousands separators"` or `"Add color gradients to highlight outliers"`
 
-2. **Specify formatting needs**: "Format currency with thousands separators" or "Add color gradients to highlight outliers"
+3. request structural elements: `"Add a spanner for financial columns"` or `"Group rows by department"`
 
-3. **Request structural elements**: "Add a spanner for financial columns" or "Group rows by department"
+4. iterate compositionally: start simple, then ask for additions like `"Now add a title and source note"`
 
-4. **Iterate compositionally**: Start simple, then ask for additions: "Now add a title and source note"
+5. leverage nanoplots: if you have time-series or trend data, explicitly ask for sparklines with `"Add a trend column using fmt_nanoplot"`
 
-5. **Leverage nanoplots**: If you have time-series or trend data, explicitly ask for sparklines: "Add a trend column using fmt_nanoplot"
+6. provide data context: share the data structure or a few sample rows so the LLM knows what columns are available
 
-6. **Provide data context**: Share the data structure or a few sample rows so the LLM knows what columns are available
-
-## Conclusion: The Right Tool for the Job
+## In Conclusion
 
 When you're analyzing data in a notebook with LLM assistance, you need tables that are:
 
