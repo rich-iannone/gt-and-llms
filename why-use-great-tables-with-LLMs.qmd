@@ -36,6 +36,18 @@ The problem with this chunk of text is that it is exhausting to read. Finding pa
 ### Stage 2: Markdown Table
 
 The natural next step is to structure this information in a table format. This is exactly what LLMs often do when you ask them to present data more clearly. Let's improve this with a Markdown table:
+
+```markdown
+| Repository | Language | Stars | Forks | Open Issues | Closed Issues | PRs Merged | Days Since Commit |
+|------------|----------|-------|-------|-------------|---------------|------------|-------------------|
+| great-tables | Python | 1834 | 67 | 23 | 234 | 456 | 2 |
+| polars | Rust | 23456 | 1234 | 345 | 5678 | 8934 | 1 |
+| pandas | Python | 38934 | 15678 | 2345 | 23456 | 12345 | 3 |
+| duckdb | C++ | 15234 | 890 | 123 | 3456 | 5678 | 1 |
+| quarto-cli | TypeScript | 8234 | 456 | 89 | 1234 | 2345 | 5 |
+| plotly.py | Python | 13456 | 2345 | 234 | 4567 | 6789 | 4 |
+```
+
 Much better! The table structure makes comparisons easier. But we're still facing limitations:
 
 - numbers aren't formatted for readability (1834 vs 1,834)
