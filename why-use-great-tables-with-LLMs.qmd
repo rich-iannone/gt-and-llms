@@ -415,7 +415,7 @@ GT(updated_data).fmt_number(columns="revenue", decimals=0)
 
 The code is a reusable recipe. Change the data, get a consistent table (no regeneration needed).
 
-With Markdown, you're essentially starting over and
+With Markdown tables, you're essentially starting over:
 
 - asking the LLM to regenerate the entire table
 - hoping it formats the table consistently
