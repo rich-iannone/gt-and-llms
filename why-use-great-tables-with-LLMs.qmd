@@ -192,6 +192,13 @@ sales_data = pl.DataFrame({
 )
 ```
 
+Why does this matter? There are a few good reasons: 
+
+- LLMs can easily generate comma-separated trend values (e.g., "195,210,228,245")
+- Great Tables transforms these strings into visual sparklines
+- You get instant visual verification of trends. Is the South region really declining? Yes, the sparkline shows it clearly
+- This bridges the gap between LLM text generation and human visual processing
+
 The alternative in Markdown might be numbers presented like this:
 
 ```
