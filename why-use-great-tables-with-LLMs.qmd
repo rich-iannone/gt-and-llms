@@ -404,3 +404,14 @@ Here's how Great Tables fits into this workflow:
 
 This workflow is impossible with Markdown tables. You'd be stuck asking the LLM to describe trends in text or regenerating static tables repeatedly.
 
+## Human Visual Processing > Text Processing
+
+Humans are visual creatures. We process information much faster when it's presented visually rather than via text. Consider this example:
+
+**Text description**: "The upload endpoint has an average latency of 1,243ms with a P95 of 2,456ms and an error rate of 5.1%, which is significantly higher than other endpoints..."
+
+**Markdown table**: Better, but you still need to scan and compare numbers mentally.
+
+**Great Tables with color gradients**: Instant visual hit as red cells jump out immediately. You know there's a problem before you even read the numbers.
+
+LLMs are great at generating structured text, but they can't see the output the way humans do. Great Tables bridges this gap by transforming LLM-generated structured data into visually optimized presentations.
