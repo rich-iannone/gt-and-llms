@@ -226,6 +226,8 @@ green for good, yellow for concerning, red for critical. Format numbers
 appropriately and add a source note explaining the color coding.
 ```
 
+The LLM returns this:
+
 ```{python}
 # API latency data
 api_data = pl.read_csv("data/api_latency.csv")
@@ -297,6 +299,8 @@ format all compensation columns as currency, add a color gradient to the total
 compensation column (green shades). Use a spanner to group the compensation
 columns, and add source notes explaining the data source and abbreviations.
 ```
+
+This is the code output from the LLM:
 
 ```{python}
 # Tech salaries data
