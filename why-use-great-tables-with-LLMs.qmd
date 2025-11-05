@@ -63,6 +63,9 @@ Now let's see the same data as a Great Tables table. Here's an example prompt yo
 ```
 Create a Great Tables table from `data/github_repos.csv` showing repository metrics. Format the numbers with thousands separators, add a color gradient on the stars column (blue palette), and color-code the days since last commit (green for recent, red for old). Include a title, subtitle, and group the issues columns under a spanner labeled 'Issues'.
 ```
+
+Here's what the LLM would generate:
+
 ```{python}
 from great_tables import GT, md, html
 import polars as pl
