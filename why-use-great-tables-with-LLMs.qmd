@@ -129,6 +129,9 @@ This is the sweet spot and we get:
 - extensibility: easy to add styling, formatting, or new columns
 
 Most importantly: **you have the code**. This isn't just a pretty table. It's a recipe you can modify, reuse, and adapt.
+
+## Why Great Tables Works Great with LLMs: Five Key Scenarios
+
 Now that we've seen the basic progression from text to Markdown to Great Tables, let's dive into specific scenarios where this combination of LLM assistance and Great Tables functionality creates something truly powerful. Each scenario demonstrates a different strength of Great Tables that's particularly well-suited to LLM-generated content and human analytical needs.
 
 ### 1. Trend Visualization with Nanoplots
@@ -275,6 +278,9 @@ api_data = api_data.with_columns(
 This approach is powerful for several reasons. Color gradients instantly highlight problem areas like slow endpoints and high error rates. You can immediately see that `/api/upload` needs attention without scanning every row. The LLM generates the data and basic structure, while Great Tables adds the intelligence layer through conditional formatting. Proper formatting with thousands separators and percentages makes numbers instantly scannable.
 
 In contrast, Markdown tables fall short here. Static text simply can't convey urgency or priority. You'd have to manually scan each row, comparing numbers mentally, and hope you catch the problematic patterns.
+
+### 3. Rich Structure That Markdown Can't Provide
+
 Great Tables supports structural elements that make complex tables comprehensible.
 
 Here's an example prompt:
