@@ -378,3 +378,11 @@ updated_data = pl.read_csv("data/q4_sales.csv")
 GT(updated_data).fmt_number(columns="revenue", decimals=0)
 ```
 
+The code is a reusable recipe. Change the data, get a consistent table (no regeneration needed).
+
+With Markdown, you're starting over:
+
+- asking the LLM to regenerate the entire table
+- hoping it formats the table consistently
+- manually verifying every number
+- taking a risk on inconsistent styling between versions
