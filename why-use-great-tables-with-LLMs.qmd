@@ -268,3 +268,10 @@ api_data = api_data.with_columns(
 This approach is powerful for several reasons. Color gradients instantly highlight problem areas like slow endpoints and high error rates. You can immediately see that `/api/upload` needs attention without scanning every row. The LLM generates the data and basic structure, while Great Tables adds the intelligence layer through conditional formatting. Proper formatting with thousands separators and percentages makes numbers instantly scannable.
 
 In contrast, Markdown tables fall short here. Static text simply can't convey urgency or priority. You'd have to manually scan each row, comparing numbers mentally, and hope you catch the problematic patterns.
+Great Tables supports structural elements that make complex tables comprehensible.
+
+Here's an example prompt:
+
+```
+Create a Great Tables table from `data/tech_salaries.csv`. Group rows by role, format all compensation columns as currency, add a color gradient to the total compensation column (green shades). Use a spanner to group the compensation columns, and add source notes explaining the data source and abbreviations.
+```
