@@ -415,3 +415,15 @@ Humans are visual creatures. We process information much faster when it's presen
 **Great Tables with color gradients**: Instant visual hit as red cells jump out immediately. You know there's a problem before you even read the numbers.
 
 LLMs are great at generating structured text, but they can't see the output the way humans do. Great Tables bridges this gap by transforming LLM-generated structured data into visually optimized presentations.
+## Conclusion: The Right Tool for the Job
+
+When you're analyzing data in a notebook with LLM assistance, you need tables that are:
+
+- Visual: easy for humans to process at a glance
+- Reproducible: run the same code with new data
+- Extensible: start simple, add sophistication as needed
+- Structured: support titles, groups, spanners, footnotes
+- Intelligent: conditional formatting, color gradients, sparklines
+
+Markdown tables are fine for simple, static displays. But when you're doing real analysis work, Great Tables gives you high-quality output with programmatic control.
+
