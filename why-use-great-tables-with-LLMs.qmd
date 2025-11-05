@@ -389,3 +389,18 @@ With Markdown, you're starting over:
 ## The LLM Sweet Spot: Analysis → Code → Insight
 
 When you combine LLMs with Great Tables, you unlock a powerful iterative workflow that's greater than the sum of its parts. Instead of just asking for analysis or just asking for a table, you can have a conversation that progressively refines both the data understanding and its presentation. Here's what this workflow typically looks like in practice:
+
+Here's how Great Tables fits into this workflow:
+
+1. **You**: "Analyze these sales trends and create a table showing regions, current quarter sales, and trend sparklines"
+
+2. **LLM**: generates trend values and Great Tables code with `.fmt_nanoplot()`
+
+3. **You**: see visual trends immediately, spot the declining region, ask follow-up questions
+
+4. **LLM**: updates the code to add conditional formatting on the declining region
+
+5. **Result**: a publication-ready table that's also a reproducible recipe
+
+This workflow is impossible with Markdown tables. You'd be stuck asking the LLM to describe trends in text or regenerating static tables repeatedly.
+
