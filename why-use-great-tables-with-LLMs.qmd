@@ -29,7 +29,7 @@ Here's what happened in those first three examples:
 
 We found that LLMs can generate Great Tables code reliably, but sometimes they need the right context. This isn't much a surprise really since it's how LLMs work with any specialized API. Though we do put a lot of effort making Great Tables LLM-friendly. We use composable methods, consistent naming, and declarative syntax and these practices happen to map more naturally with how you'd generally want to describe tables.
 
-What this means is that if you're working with an LLM to create tables, providing API context (through documentation, examples, or tools like GitHub Copilot with access to the codebase) dramatically improves your chances of getting working code on the first try. Also, if the LLM gets it wrong you can just point out the error (provide the error text itself) and the second response will probably run successfully. However, it's amazing that an LLM can frequently provide running code on the first try so often (and I've observing it getting better over the last few updates of Claude in particular). 
+What this means is that if you're working with an LLM to create tables, providing API context (through documentation, examples, or tools like GitHub Copilot with access to the codebase and project site docs) improves your chances of getting working code on the first try. Also, if the LLM gets it wrong you can just point out the error (i.e., provide the error text itself) and the second response will probably run successfully. That said, it's amazing that an LLM can so frequently provide working code on the first try (and I've been observing it getting better over the last few updates of Claude Sonnet). 
 
 ## The Progression: Text -> Markdown -> Great Tables
 
