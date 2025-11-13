@@ -154,7 +154,7 @@ This is the sweet spot and we get:
 - reproducibility: change the data, run the code, get an updated table!
 - extensibility: easy to add styling, formatting, or new columns
 
-Most importantly: **you have the code**. This isn't just a pretty table. It's a recipe you can modify, reuse, and adapt.
+The most important thing is that *you have the code*. This isn't just a pretty table. It's a recipe you can modify, reuse, and adapt.
 
 ## Why Great Tables Works Great with LLMs: Five Key Scenarios
 
@@ -550,110 +550,31 @@ In our testing, LLMs handled `.fmt_nanoplot()` surprisingly well when given clea
 
 ## Testing Your Prompts Systematically with chatlas
 
-If you're building a workflow that relies on LLM-generated Great Tables code, you'll want to test your prompts systematically rather than manually checking each output. The [chatlas](https://posit-dev.github.io/chatlas/) Python package, combined with the [Inspect AI](https://inspect.ai-safety-institute.org.uk/) framework, provides a powerful way to create automated evaluations.
+If you're building a workflow that relies on LLM-generated Great Tables code, you'll want to test your prompts systematically rather than manually checking each output. The [chatlas](https://posit-dev.github.io/chatlas/) Python package provides a powerful way to create automated evaluations.
 
-### Setting up eval-based testing
+### A Complete Working Example
 
-First, install chatlas with eval support:
+We've created a full evaluation notebook that demonstrates this workflow: [`chatlas-eval-analysis.qmd`](chatlas-eval-analysis.qmd)
 
-```bash
-pip install 'chatlas[eval]'
-```
+This notebook shows you how to:
 
 The basic workflow:
 
-1. **Collect a dataset** of test cases (prompts + expected behavior)
-2. **Create a solver** from your chat instance using `.to_solver()`
-3. **Define a scorer** to grade the outputs (e.g., does the generated code run without errors?)
-4. **Run the evaluation** to get quantitative results
+1. collect a dataset of test cases (prompts + expected behavior)
+2. create a solver from your chat instance using `.to_solver()`
+3. define a scorer to grade the outputs (e.g., does the generated code run without errors?)
+4. run the evaluation to get quantitative results
 
-### Example: Testing Great Tables prompts
-
-Let's create an eval that tests whether an LLM can generate working Great Tables code for different scenarios:
-
-```python
-from chatlas import ChatOpenAI
-from inspect_ai import Task, task
-from inspect_ai.dataset import json_dataset
-from inspect_ai.scorer import model_graded_qa
-
-# Create a chat instance with Great Tables context
-chat = ChatOpenAI(
-    system_prompt="""You are a Python expert helping users create Great Tables.
-    Generate working Python code using the great_tables library.
-    Always import required modules and use correct method names."""
-)
-
-@task
-def great_tables_eval():
-    return Task(
-        dataset=json_dataset("great_tables_test_cases.jsonl"),
-        solver=chat.to_solver(),
-        scorer=model_graded_qa(model="openai/gpt-4o-mini")
-    )
-```
-
-### Building your eval dataset
-
-Use `.export_eval()` to capture successful interactions as test cases:
-
-```python
-from chatlas import ChatOpenAI
-
-chat = ChatOpenAI()
-
-# Have a successful interaction
-chat.chat("""Create a Great Tables table from this data:
-endpoint,method,requests
-/api/users,GET,125043
-/api/posts,GET,89234
-
-Format requests with comma separators and add a title 'API Requests'.""")
-
-# Export this as a test case
-chat.export_eval(
-    "great_tables_test_cases.jsonl",
-    target="""Code should:
-    1. Import GT from great_tables and use polars/pandas for data
-    2. Use .fmt_number() with use_seps=True for requests column
-    3. Use .tab_header() for the title
-    4. Run without errors"""
-)
-```
-
-### Running your evals
-
-Once you have test cases, run them via the inspect CLI:
-
-```bash
-inspect eval great_tables_eval.py
-```
-
-Then view results interactively:
-
-```bash
-inspect view
-```
-
-This gives you quantitative metrics on:
-- How many prompts produce working code
-- Which types of requests fail most often
-- How changes to your system prompt affect success rates
-
-### Why this matters for Great Tables
-
-Our testing showed that success rates vary dramatically based on:
-- Complexity of the request (simple formatting: 100%, complex aggregation: 0%)
-- Whether API docs are provided (4.3x improvement)
-- How prompts are structured
+Check out the full notebook to see how to define test prompts for different complexity levels, how to programmatically generate and test code with chatlas. Plus it shows you how to present the results using Great Tables itself, which looks very nice.
 
 With systematic evals, you can:
-- **Test different system prompts** to find what works best
-- **Measure improvements** when you add API context
-- **Catch regressions** when LLM providers update their models
-- **Build confidence** before deploying LLM-assisted workflows
 
-If you're building a data app that generates tables, or creating a tool that helps users create Great Tables code, this eval framework lets you validate that your prompts are actually working reliably.
+- validate that documentation helps through quantifying exactly how much API context improves success rates
+- test prompt strategies and experiment with different system prompts and measure results
+- catch regressions by re-running tests when LLM providers update models
+- build confidence knowing your prompts work reliably before deploying workflows
+
+If you're building a data app that generates tables or creating tools that help users create Great Tables code, this eval framework lets you validate that your prompts actually work.
 
 ## In Conclusion
 
@@ -665,10 +586,8 @@ When you're analyzing data in a notebook with LLM assistance, you need tables th
 - structured: support titles, groups, spanners, footnotes
 - intelligent: conditional formatting, color gradients, sparklines
 
-Markdown tables are fine for simple, static displays. But when you're doing real analysis work, Great Tables gives you high-quality output with programmatic control.
+Markdown tables are fine for simple, static displays. But when you're doing real analysis work, Great Tables gives you high-quality output with programmatic control. Just as you'd use plotnine or seaborn for visualizations in your notebook, we believe that Great Tables is the right choice for tables. And when you combine it with LLM assistance, you get the best of both worlds: conversational specification with code-level control.
 
-Just as you'd use plotnine or seaborn for visualizations in your notebook, we believe that Great Tables is the right choice for tables. And when you combine it with LLM assistance, you get the best of both worlds: conversational specification with code-level control.
+The future of data analysis involves people and LLMs working together. Great Tables is built for this kind of collaboration and it gives you the structure and tools you need while remaining accessible enough for LLMs to generate valid code.
 
-The future of data analysis involves people and LLMs working together. Great Tables is built for exactly this collaboration and it gives you the structure and tools you need while remaining accessible enough for LLMs to generate valid code.
-
-Try it out in your next notebook. Ask your favorite LLM to create a Great Tables table from your data. You might be surprised how well it works! And you'll likely be delighted with how much more effective your tables become.
+Try it out in your next notebook! Ask your favorite LLM to create a Great Tables table from your data. You might be surprised how well it works. And you'll likely be delighted with how much more effective your tables become.
