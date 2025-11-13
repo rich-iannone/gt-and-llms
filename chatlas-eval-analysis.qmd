@@ -1,0 +1,341 @@
+---
+title: "Evaluating Great Tables Code Generation with chatlas"
+author: Rich Iannone
+date: 2025-11-12
+jupyter: python3
+format:
+    html:
+        embed-resources: true
+html-table-processing: none
+---
+
+## Introduction
+
+This document reproduces the manual analysis from `great-tables-tested-with-LLMs.qmd` using the [chatlas](https://posit-dev.github.io/chatlas/) Python package.
+
+Instead of manually running prompts and checking if code works, we'll:
+
+1. Define test cases for the first 3 examples (API Latency, Tech Salaries, GitHub Repos)
+2. Use chatlas to automatically generate code with Claude
+3. Test each generated code sample to see if it runs without errors
+4. Compare results with and without API documentation
+
+## Setup
+
+```{python}
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+import polars as pl
+
+# Load environment variables
+load_dotenv()
+
+# Verify API key is available
+assert os.getenv("ANTHROPIC_API_KEY"), "ANTHROPIC_API_KEY not found in .env"
+```
+
+## Test Case Definitions
+
+We'll test the same three examples from the manual analysis, focusing on the ones that showed clear improvement with API documentation.
+
+### Example 1: API Latency Dashboard
+
+Simple formatting and conditional styling. This had 100% success rate even without docs.
+
+```{python}
+# Define test prompts (success = code runs without errors)
+example1_prompt = """Load the API latency data from `api_latency.csv` using Polars, then create a Great Tables table that:
+- formats the millisecond columns with comma separators
+- formats the requests column with comma separators
+- formats the errors column with comma separators
+- highlights rows where p99_ms is over 1000ms in light red
+- adds a title "API Performance Dashboard"
+- sorts by p99_ms descending
+- puts the endpoint column in the stub
+
+The CSV has columns: endpoint, method, avg_ms, p95_ms, p99_ms, requests, errors"""
+
+print("✓ Example 1 prompt defined")
+```
+
+### Example 2: Tech Salaries
+
+Row grouping, currency formatting, color gradients. Success rate: 33% without docs, 100% with docs.
+
+```{python}
+example2_prompt = """Using Great Tables, create a table from `tech_salaries.csv` that:
+- Groups rows by role
+- Formats all salary/compensation columns as currency (no cents)
+- Colors the total_comp column using a gradient from white to green, with higher values darker
+- Shows the location in a smaller, gray font
+- Adds column spanners: "Role" for role/level, "Compensation" for the money columns, "Details" for yoe/location
+
+The CSV has columns: role, level, base_salary, bonus, equity, total_comp, yoe, location"""
+
+print("✓ Example 2 prompt defined")
+```
+
+### Example 3: GitHub Repository Stats
+
+Multi-column formatting, bar charts, complex styling. Success rate: 0% without docs, 67% with docs.
+
+```{python}
+example3_prompt = """Create a Great Tables table from `github_repos.csv` that:
+- Formats stars with K suffix (e.g., 23.4K)
+- Formats forks with comma separators
+- Creates a bar chart in the stars column (using nanoplot)
+- Colors the last_commit_days column: green for <3, yellow for 3-7, red for >7
+- Adds a spanner "Issues" over issues_open and issues_closed
+- Adds a title "GitHub Repository Metrics"
+
+The CSV has columns: repo, language, stars, forks, issues_open, issues_closed, prs_merged, last_commit_days"""
+
+print("✓ Example 3 prompt defined")
+```
+
+## Defining API Documentation Context
+
+We'll fetch the API documentation from Great Tables' `/.well-known/llms.txt` file and add it to prompts to test the impact of providing reference material.
+
+```{python}
+import httpx
+
+# Fetch API documentation from Great Tables llms.txt
+response = httpx.get("https://posit-dev.github.io/great-tables/.well-known/llms.txt")
+api_context = response.text
+
+print("✓ API context fetched from /.well-known/llms.txt")
+print(f"✓ Documentation length: {len(api_context)} characters")
+```
+
+## Testing Code Execution
+
+We'll create a function to test if generated code runs without errors, then systematically test all examples.
+
+```{python}
+import subprocess
+import tempfile
+from pathlib import Path
+from chatlas import ChatAnthropic
+
+def test_generated_code(code: str, data_file: str) -> tuple[bool, str]:
+    """
+    Test if generated code runs without errors.
+    
+    Returns:
+        (success: bool, message: str)
+    """
+    # Strip markdown code fences if present
+    code = code.strip()
+    if code.startswith("```python"):
+        code = code[len("```python"):].lstrip()
+    elif code.startswith("```"):
+        code = code[3:].lstrip()
+    if code.endswith("```"):
+        code = code[:-3].rstrip()
+    
+    # Create a temporary file with the code
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write(code)
+        temp_file = f.name
+    
+    try:
+        # Try to run the code
+        result = subprocess.run(
+            ['python', temp_file],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=str(Path.cwd())
+        )
+        
+        if result.returncode == 0:
+            return True, "Code executed successfully"
+        else:
+            return False, f"Error: {result.stderr[:200]}"
+    except subprocess.TimeoutExpired:
+        return False, "Timeout: code took too long to execute"
+    except Exception as e:
+        return False, f"Exception: {str(e)[:200]}"
+    finally:
+        # Clean up
+        Path(temp_file).unlink(missing_ok=True)
+
+# Initialize results DataFrame with False values
+results_data = pl.DataFrame({
+    "Example": [
+        "1. API Latency Dashboard",
+        "2. Tech Salaries",
+        "3. GitHub Repository Stats"
+    ],
+    "Claude (No Docs)": [False, False, False],
+    "Claude (With Docs)": [False, False, False]
+})
+
+print("✓ Results DataFrame initialized\n")
+```
+
+## Streamlined Testing Loop
+
+Now let's test all examples systematically and populate the results.
+
+```{python}
+from great_tables import GT
+
+# Define test configurations
+test_cases = [
+    {
+        "example_name": "1. API Latency Dashboard",
+        "prompt": example1_prompt,
+        "data_file": "data/api_latency.csv",
+        "row_idx": 0
+    },
+    {
+        "example_name": "2. Tech Salaries",
+        "prompt": example2_prompt,
+        "data_file": "data/tech_salaries.csv",
+        "row_idx": 1
+    },
+    {
+        "example_name": "3. GitHub Repository Stats",
+        "prompt": example3_prompt,
+        "data_file": "data/github_repos.csv",
+        "row_idx": 2
+    }
+]
+
+system_prompt_base = """You are a Python expert. Generate complete, working Python code that can be executed directly. Output only the code, no explanations."""
+
+system_prompt_with_docs = system_prompt_base + """
+
+You have access to the Great Tables API documentation provided in the user's message.
+Use the correct method names and parameters as specified in the documentation."""
+
+# Store error messages for later display
+error_messages = []
+
+# Run tests for each example
+for test_case in test_cases:
+    print(f"Testing: {test_case['example_name']}")
+    
+    # Test without docs
+    chat_no_docs = ChatAnthropic(
+        model="claude-sonnet-4-5",
+        system_prompt=system_prompt_base
+    )
+    response_no_docs = chat_no_docs.chat(test_case['prompt'])
+    success_no_docs, msg_no_docs = test_generated_code(
+        response_no_docs.content, 
+        test_case['data_file']
+    )
+    
+    # Update results DataFrame
+    results_data = results_data.with_columns(
+        pl.when(pl.col("Example") == test_case['example_name'])
+        .then(success_no_docs)
+        .otherwise(pl.col("Claude (No Docs)"))
+        .alias("Claude (No Docs)")
+    )
+    
+    if not success_no_docs:
+        error_messages.append({
+            "example": test_case['example_name'],
+            "condition": "No Docs",
+            "error": msg_no_docs
+        })
+    
+    print(f"  No Docs: {'✓' if success_no_docs else '✗'}")
+    
+    # Test with docs
+    chat_with_docs = ChatAnthropic(
+        model="claude-sonnet-4-5",
+        system_prompt=system_prompt_with_docs
+    )
+    response_with_docs = chat_with_docs.chat(test_case['prompt'] + "\n\n" + api_context)
+    success_with_docs, msg_with_docs = test_generated_code(
+        response_with_docs.content,
+        test_case['data_file']
+    )
+    
+    # Update results DataFrame
+    results_data = results_data.with_columns(
+        pl.when(pl.col("Example") == test_case['example_name'])
+        .then(success_with_docs)
+        .otherwise(pl.col("Claude (With Docs)"))
+        .alias("Claude (With Docs)")
+    )
+    
+    if not success_with_docs:
+        error_messages.append({
+            "example": test_case['example_name'],
+            "condition": "With Docs",
+            "error": msg_with_docs
+        })
+    
+    print(f"  With Docs: {'✓' if success_with_docs else '✗'}\n")
+
+print("✓ All examples tested")
+```
+
+## Results Summary Table
+
+Now let's create a Great Tables table to visualize the results.
+
+```{python}
+
+# Create the Great Tables table
+(
+    GT(results_data)
+    .tab_header(
+        title="LLM Code Generation Success Rates",
+        subtitle="Claude Sonnet 4 tested on Great Tables code generation"
+    )
+    .fmt_tf(
+        columns=["Claude (No Docs)", "Claude (With Docs)"],
+        tf_style="check-mark"
+    )
+    .cols_label(
+        Example="Test Case",
+        **{"Claude (No Docs)": "Without API Docs", "Claude (With Docs)": "With API Docs"}
+    )
+    .tab_source_note(
+        source_note="✓ = Code executed successfully | ✗ = Code failed to execute"
+    )
+)
+```
+
+## Success Rate Analysis
+
+```{python}
+# Calculate success rates
+total_no_docs = results_data["Claude (No Docs)"].sum()
+total_with_docs = results_data["Claude (With Docs)"].sum()
+total_tests = len(results_data)
+
+print(f"Overall Success Rates:")
+print(f"Without API Docs: {total_no_docs}/{total_tests} ({total_no_docs/total_tests*100:.0f}%)")
+print(f"With API Docs: {total_with_docs}/{total_tests} ({total_with_docs/total_tests*100:.0f}%)")
+improvement = (total_with_docs - total_no_docs) / total_tests * 100
+print(f"Improvement: {improvement:+.0f} percentage points")
+
+# Per-example breakdown
+print(f"\nPer-Example Results:")
+for i, row in enumerate(results_data.iter_rows(named=True)):
+    no_docs = "✓" if row["Claude (No Docs)"] else "✗"
+    with_docs = "✓" if row["Claude (With Docs)"] else "✗"
+    print(f"{row['Example']}: {no_docs} → {with_docs}")
+```
+
+## Conclusion
+
+This analysis demonstrates how to:
+
+1. use chatlas to interact with Claude programmatically
+2. automatically generate code from prompts
+3. test generated code by executing it in a subprocess
+4. systematically compare results with and without API documentation
+5. measure success rates quantitatively
+6. visualize results with Great Tables
+
+This approach makes it practical to validate that documentation actually helps LLMs. We can test different prompting strategies systematically and ensure API changes don't break common use cases. Finally, it's possible to measure improvements across model versions.
