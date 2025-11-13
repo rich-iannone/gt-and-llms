@@ -1,7 +1,7 @@
 ---
 title: "Why Use Great Tables with LLMs?"
 author: Rich Iannone
-date: 2025-11-13
+date: 2025-11-15
 jupyter: python3
 format:
     html:
@@ -21,23 +21,15 @@ Let's explore why Great Tables is the ideal choice when working with LLMs to ana
 
 ## But Do LLMs Actually Work with Great Tables?
 
-Before diving into the "why", let's address the "does it work?" question with actual data. We tested three frontier models (Claude Sonnet 4.5, GPT-5, and Gemini 2.5 Pro) on their ability to generate working Great Tables code from natural language prompts.
-
-The results were... instructive:
-
-**Without API documentation (zero-shot)**: 17% success rate. Out of 15 attempts across 5 examples, only 4 produced working code. The rest crashed with hallucinated methods like `.tab_footnote()`, `.style()`, and invented parameters.
-
-**With API documentation**: 73% success rate on the first 3 examples. The same prompts, but with access to an LLM-friendly API reference, increased success rates by 4.3x.
+Before diving into the "why", let's address the "does it work?" question with actual data. We tested Claude Sonnet 4.5 on its ability to generate working Great Tables code from prompts.
 
 Here's what happened in those first three examples:
 
 ![](GT-LLM-results-claude-sonnet-4-5.png)
 
-The API Latency example was straightforward: basic formatting and conditional styling. All three models got it right even without documentation. But as complexity increased (row grouping, column spanners, multiple formatting types), the wheels came off without proper API context.
+We found that LLMs can generate Great Tables code reliably, but sometimes they need the right context. This isn't much a surprise really since it's how LLMs work with any specialized API. Though we do put a lot of effort making Great Tables LLM-friendly. We use composable methods, consistent naming, and declarative syntax and these practices happen to map more naturally with how you'd generally want to describe tables.
 
-We found that LLMs can generate Great Tables code reliably, but they need the right context. This isn't much a surprise really since it's how LLMs work with any specialized API. Though we do put a lot of effort making Great Tables LLM-friendly. We use composable methods, consistent naming, and declarative syntax and these practices happen to map more naturally with how you'd generally want to describe tables.
-
-What this means is that if you're working with an LLM to create tables, providing API context (through documentation, examples, or tools like GitHub Copilot with access to the codebase) dramatically improves your chances of getting working code on the first try.
+What this means is that if you're working with an LLM to create tables, providing API context (through documentation, examples, or tools like GitHub Copilot with access to the codebase) dramatically improves your chances of getting working code on the first try. Also, if the LLM gets it wrong you can just point out the error (provide the error text itself) and the second response will probably run successfully. However, it's amazing that an LLM can frequently provide running code on the first try so often (and I've observing it getting better over the last few updates of Claude in particular). 
 
 ## The Progression: Text -> Markdown -> Great Tables
 
