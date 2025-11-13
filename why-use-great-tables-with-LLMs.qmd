@@ -405,7 +405,7 @@ The LLM extends the original code to this:
 )
 ```
 
-This demonstrates the real power of Great Tables' compositional design. Extensions feel natural because each method call adds exactly one feature. You're building on a solid foundation rather than starting from scratch with each iteration. Typically, the LLM gives you about 70% of what you need, and you can refine the remaining 30% through simple additions.
+This demonstrates the real power of Great Tables' compositional design. Extensions feel natural because each method call adds just one new feature. You're building up from a solid foundation rather than starting from scratch with every iteration. Typically, the LLM gives you a lot of what you need initially, and you can refine through simple additions until you're satisfied with the output table.
 
 With Markdown you can't extend unless you want to type. You either regenerate the entire table or manually edit text (error-prone and not reproducible).
 
