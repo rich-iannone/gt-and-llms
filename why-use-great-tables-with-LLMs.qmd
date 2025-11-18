@@ -21,15 +21,17 @@ Let's explore why Great Tables is the ideal choice when working with LLMs to ana
 
 ## But Do LLMs Actually Work with Great Tables?
 
-Before diving into the "why", let's address the "does it work?" question with actual data. We tested Claude Sonnet 4.5 on its ability to generate working Great Tables code from prompts.
+Before diving into the *why*, let's address the *does it work?* question with actual data. We systematically tested Claude Sonnet 4.5 on three progressively complex scenarios: a simple dashboard with basic formatting, a salary table with row grouping and currency formatting, and a repository stats table with nanoplots and multi-level styling.
 
-Here's what happened in those first three examples:
+Here's what we found:
 
-![](GT-LLM-results-claude-sonnet-4-5.png)
+![](GT-LLM-quality-claude-sonnet-4-5.png)
 
-We found that LLMs can generate Great Tables code reliably, but sometimes they need the right context. This isn't much a surprise really since it's how LLMs work with any specialized API. Though we do put a lot of effort making Great Tables LLM-friendly. We use composable methods, consistent naming, and declarative syntax and these practices happen to map more naturally with how you'd generally want to describe tables.
+The results are compelling. Even without API documentation, the LLM generated high-quality code for simpler tables. With API documentation included in the prompt, it achieved excellent results across all complexity levels—including the most challenging example with nanoplots and complex styling.
 
-What this means is that if you're working with an LLM to create tables, providing API context (through documentation, examples, or tools like GitHub Copilot with access to the codebase and project site docs) improves your chances of getting working code on the first try. Also, if the LLM gets it wrong you can just point out the error (i.e., provide the error text itself) and the second response will probably run successfully. That said, it's amazing that an LLM can so frequently provide working code on the first try (and I've been observing it getting better over the last few updates of Claude Sonnet). 
+This success isn't accidental. We've deliberately designed Great Tables to be LLM-friendly: composable methods that chain naturally, consistent naming patterns, and declarative syntax that maps intuitively to how you'd describe a table in plain language. When an LLM sees a request to "format numbers with thousands separators and add a blue color gradient," it can readily translate that to `.fmt_number(use_seps=True)` and `.data_color(palette="Blues")`.
+
+What this means for your workflow: LLMs can reliably generate Great Tables code, especially when given appropriate context. If you're using GitHub Copilot, Claude, or ChatGPT, providing API documentation or examples dramatically improves first-attempt success. And even when the LLM gets something wrong, you can simply point out the error and get a corrected version immediately. The combination of thoughtful API design and powerful language models creates a remarkably effective partnership for building sophisticated tables. 
 
 ## The Progression: Text -> Markdown -> Great Tables
 
@@ -479,6 +481,26 @@ Instant visual hit as red cells will jump out immediately. You know there's a pr
 
 LLMs are great at generating structured text, but they can't see the output the way humans do. Great Tables bridges this gap by transforming LLM-generated structured data into visually optimized presentations.
 
+## Why Tables Can Be Better Than Plots for LLM-Generated Analysis
+
+There's another good reason to favor tables when working with LLMs. LLMs can sometimes struggle to accurately interpret plots. Recent research from Posit's [bluffbench evaluation](https://posit.co/blog/introducing-bluffbench/) reveals a surprising limitation. When shown plots of data, LLMs often see what they *expect* to see rather than what's *actually* displayed.
+
+In the bluffbench tests, LLMs were presented with plots from familiar datasets like `mtcars`. However, there's a twist: the data was secretly transformed to flip the expected relationships. For example, they modified the horsepower variable so that higher values actually represented lower horsepower. When asked to interpret a scatter plot showing the relationship between horsepower and fuel efficiency, the LLMs consistently reported seeing the expected negative correlation (even though the plot clearly showed the opposite pattern).
+
+Here's a brief summary of the results:
+
+- with well-known datasets (like `mtcars`), LLMs correctly identified contradictory patterns only about 20-40% of the time
+- even with novel datasets containing unexpected discontinuities, accuracy was only around 50-60%
+- models tended to describe what they expected based on variable names rather than what was actually plotted
+
+This has obviously consequences for data analysis. When you ask an LLM to analyze data and create visualizations, you can't fully trust its interpretation of the visual output. The LLM might generate a plot, but then describe patterns that align with its expectations rather than what's right there in the image.
+
+Interpreting data in tables can sidestep these issues because tables are text/code. LLMs can directly read table values as structured text, not interpret them from pixels. Because there's no visual ambiguity, there's no gap between what's displayed and what the LLM perceives. There's a precision to tables since LLMs can accurately reference specific numbers, compare values, and identify anomalies. This is great for reproducible analysis given that the table structure itself conveys the data unambiguously.
+
+When you generate a Great Tables table with an LLM, you'll proabably get a reliable interpretation of the data within it. For instance, the LLM can see that the upload endpoint has an error rate of 5.1% and accurately compare it to other endpoints. It can identify that the 'South' region shows declining trends by reading the actual numbers. There's no risk of the LLM seeing patterns that aren't there.
+
+This doesn't mean plots are bad. Visualizations remain essential for human consumption and pattern recognition. But when working in an LLM-assisted workflow where the AI needs to both generate and interpret data presentations, tables provide a more reliable foundation.
+
 ## Practical Tips for Using Great Tables with LLMs
 
 Our testing of three frontier models revealed clear patterns about what works and what doesn't. Here are strategies based on actual experiments with hundreds of prompts:
@@ -546,18 +568,17 @@ If you're building a workflow that relies on LLM-generated Great Tables code, yo
 
 ### A Complete Working Example
 
-We've created a full evaluation notebook that demonstrates this workflow: [`chatlas-eval-analysis.qmd`](chatlas-eval-analysis.qmd)
+We've created a [full evaluation notebook](https://github.com/rich-iannone/gt-and-llms/blob/main/chatlas-eval-analysis.qmd) that demonstrates this workflow using [Inspect](https://inspect.aisi.org.uk), and it shows you how to:
 
-This notebook shows you how to:
+1. define test cases with specific prompts and target descriptions
+2. use Inspect to create structured evaluation tasks with samples, solvers, and scorers
+3. implement a custom scorer that judges code quality as **poor**, **fair**, or **great** based on feature completeness (not just execution success)
+4. run systematic evaluations comparing results with and without API documentation
+5. visualize results using Great Tables itself
 
-The basic workflow:
+The notebook uses chatlas within the Inspect framework to automatically generate code from prompts and evaluates it with an LLM judge. This approach goes beyond simple pass/fail testing to provide nuanced quality ratings that reflect whether the generated code contains the requested features and uses appropriate methods.
 
-1. collect a dataset of test cases (prompts + expected behavior)
-2. create a solver from your chat instance using `.to_solver()`
-3. define a scorer to grade the outputs (e.g., does the generated code run without errors?)
-4. run the evaluation to get quantitative results
-
-Check out the full notebook to see how to define test prompts for different complexity levels, how to programmatically generate and test code with chatlas. Plus it shows you how to present the results using Great Tables itself, which looks very nice.
+Check out the full notebook to see the complete implementation, including how to handle code extraction, add missing imports automatically, and create compelling visualizations of evaluation results.
 
 With systematic evals, you can:
 
