@@ -21,7 +21,7 @@ Let's explore why Great Tables is the ideal choice when working with LLMs to ana
 
 ## But Do LLMs Actually Work with Great Tables?
 
-Before diving into the *why*, let's address the *does it work?* question with actual data. We systematically tested Claude Sonnet 4.5 on three progressively complex scenarios: a simple dashboard with basic formatting, a salary table with row grouping and currency formatting, and a repository stats table with nanoplots and multi-level styling.
+Before diving into the *why*, let's address the *does it work?* question with actual data. We systematically tested Claude Sonnet 4.5 on three progressively complex scenarios: (1) simple dashboard data basic formatting, (2) a salary table with row grouping and currency formatting, and (3) a repository stats table with nanoplots and multi-level styling.
 
 Here's what we found:
 
@@ -477,7 +477,7 @@ Better, but you still need to scan and compare numbers mentally.
 
 **Great Tables with color gradients**
 
-Instant visual hit as red cells will jump out immediately. You know there's a problem before you even read the numbers.
+Instant visual hit as red cells will jump out immediately! You know there's a problem before you even read the numbers.
 
 LLMs are great at generating structured text, but they can't see the output the way humans do. Great Tables bridges this gap by transforming LLM-generated structured data into visually optimized presentations.
 
@@ -497,7 +497,7 @@ This has obviously consequences for data analysis. When you ask an LLM to analyz
 
 Interpreting data in tables can sidestep these issues because tables are text/code. LLMs can directly read table values as structured text, not interpret them from pixels. Because there's no visual ambiguity, there's no gap between what's displayed and what the LLM perceives. There's a precision to tables since LLMs can accurately reference specific numbers, compare values, and identify anomalies. This is great for reproducible analysis given that the table structure itself conveys the data unambiguously.
 
-When you generate a Great Tables table with an LLM, you'll proabably get a reliable interpretation of the data within it. For instance, the LLM can see that the upload endpoint has an error rate of 5.1% and accurately compare it to other endpoints. It can identify that the 'South' region shows declining trends by reading the actual numbers. There's no risk of the LLM seeing patterns that aren't there.
+When you generate a Great Tables table with an LLM, you'll probably get a reliable interpretation of the data within it. The LLM can accurately read numeric values, compare them across rows, identify outliers, and spot trends. And this is without the risk of misinterpreting visual encodings or seeing patterns that align with expectations rather than reality. Where image-based plots can mislead an LLM's pattern recognition, structured table data provides direct, unambiguous access to the actual values.
 
 This doesn't mean plots are bad. Visualizations remain essential for human consumption and pattern recognition. But when working in an LLM-assisted workflow where the AI needs to both generate and interpret data presentations, tables provide a more reliable foundation.
 
