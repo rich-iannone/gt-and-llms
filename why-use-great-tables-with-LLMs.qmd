@@ -21,7 +21,7 @@ Let's explore why Great Tables is the ideal choice when working with LLMs to ana
 
 ## But Do LLMs Actually Work with Great Tables?
 
-Before diving into the *why*, let's address the *does it work?* question with actual data. We systematically tested Claude Sonnet 4.5 on three progressively complex scenarios: (1) simple dashboard data basic formatting, (2) a salary table with row grouping and currency formatting, and (3) a repository stats table with nanoplots and multi-level styling.
+Before diving into the *why*, let's address the *does it work?* question with actual data. We systematically tested Claude Sonnet 4.5 on three progressively complex scenarios: (1) a simple table with basic formatting requirements, (2) a salary table with row grouping and currency formatting, and (3) a repository stats table with nanoplots and multi-level styling.
 
 Here's what we found:
 
