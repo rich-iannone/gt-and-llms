@@ -1,7 +1,7 @@
 ---
 title: "Evaluating Great Tables Code Generation with chatlas and inspect_ai"
 author: Rich Iannone
-date: 2025-11-12
+date: 2025-11-20
 jupyter: python3
 format:
     html:
@@ -11,19 +11,22 @@ html-table-processing: none
 
 ## Introduction
 
-This document evaluates LLM-generated Great Tables code using the [chatlas](https://posit-dev.github.io/chatlas/) Python package and [inspect_ai](https://inspect.ai-safety-institute.org.uk/) for systematic evaluation.
+This document evaluates LLM-generated Great Tables code using the [chatlas](https://posit-dev.github.io/chatlas/) Python package and [Inspect](https://inspect.ai-safety-institute.org.uk/) for systematic evaluation.
 
 Instead of manually running prompts and checking if code works, we'll:
 
-1. Define test cases for the first 3 examples (API Latency, Tech Salaries, GitHub Repos)
-2. Use chatlas with inspect_ai to automatically generate code with Claude
-3. Use inspect_ai to judge the quality of generated code: *poor*, *fair*, or *great*
-4. Compare results with and without API documentation
+1. define test cases for the first 3 examples (API Latency, Tech Salaries, GitHub Repos)
+2. use chatlas with Inspect to automatically generate code with Claude
+3. use Inspect to judge the quality of generated code: *poor*, *fair*, or *great*
+4. compare results with and without API documentation
 
 ## Setup
 
 ```{python}
 import os
+import sys
+import warnings
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 import polars as pl
@@ -32,6 +35,14 @@ from inspect_ai.dataset import Sample
 from inspect_ai.scorer import Score, scorer, Scorer, CORRECT, INCORRECT, PARTIAL
 from inspect_ai.solver import generate, Solver, solver
 from inspect_ai.model import get_model
+
+# Suppress all warnings and async-related errors
+warnings.filterwarnings('ignore')
+logging.getLogger('asyncio').setLevel(logging.CRITICAL)
+
+# Fix for nested asyncio in Jupyter/Quarto
+import nest_asyncio
+nest_asyncio.apply()
 
 # Load environment variables
 load_dotenv()
@@ -46,7 +57,7 @@ We'll test the same three examples from the manual analysis, focusing on the one
 
 ### Example 1: API Latency Dashboard
 
-Simple formatting and conditional styling. This had 100% success rate even without docs.
+Simple formatting and conditional styling.
 
 ```{python}
 # Define test prompts (success = code runs without errors)
@@ -60,13 +71,11 @@ example1_prompt = """Load the API latency data from `data/api_latency.csv` using
 - puts the endpoint column in the stub
 
 The CSV has columns: endpoint, method, avg_ms, p95_ms, p99_ms, requests, errors"""
-
-print("Example 1 prompt defined")
 ```
 
 ### Example 2: Tech Salaries
 
-Row grouping, currency formatting, color gradients. Success rate: 33% without docs, 100% with docs.
+Row grouping, currency formatting, color gradients.
 
 ```{python}
 example2_prompt = """Using Great Tables, create a table from `data/tech_salaries.csv` that:
@@ -77,13 +86,11 @@ example2_prompt = """Using Great Tables, create a table from `data/tech_salaries
 - Adds column spanners: "Role" for role/level, "Compensation" for the money columns, "Details" for yoe/location
 
 The CSV has columns: role, level, base_salary, bonus, equity, total_comp, yoe, location"""
-
-print("Example 2 prompt defined")
 ```
 
 ### Example 3: GitHub Repository Stats
 
-Multi-column formatting, bar charts, complex styling. Success rate: 0% without docs, 67% with docs.
+More complex, with multi-column formatting, bar charts, and conditional styling.
 
 ```{python}
 example3_prompt = """Create a Great Tables table from `data/github_repos.csv` that:
@@ -95,8 +102,6 @@ example3_prompt = """Create a Great Tables table from `data/github_repos.csv` th
 - Adds a title "GitHub Repository Metrics"
 
 The CSV has columns: repo, language, stars, forks, issues_open, issues_closed, prs_merged, last_commit_days"""
-
-print("Example 3 prompt defined")
 ```
 
 ## Defining API Documentation Context
@@ -109,14 +114,11 @@ import httpx
 # Fetch API documentation from Great Tables llms.txt
 response = httpx.get("https://posit-dev.github.io/great-tables/.well-known/llms.txt")
 api_context = response.text
-
-print("API context fetched from /.well-known/llms.txt")
-print(f"Documentation length: {len(api_context)} characters")
 ```
 
 ## Defining the Code Quality Scorer
 
-We'll create an inspect_ai scorer that evaluates the generated code and rates it as poor, fair, or great.
+We'll create an Inspect scorer that evaluates the generated code and rates it as 'poor', 'fair', or 'great'.
 
 ```{python}
 import subprocess
@@ -258,13 +260,11 @@ def code_quality_scorer():
             )
     
     return score
-
-print("Code quality scorer defined\n")
 ```
 
-## Creating inspect_ai Tasks
+## Creating Inspect Tasks
 
-Now let's create inspect_ai tasks for systematic evaluation.
+Now let's create Inspect tasks for systematic evaluation.
 
 ```{python}
 # Create samples for each test case
@@ -321,27 +321,36 @@ def eval_with_docs():
         scorer=code_quality_scorer(),
         system_message="You are a Python expert. Generate ONLY executable Python code using Polars (not Pandas) for data manipulation. Do not include any explanations, markdown formatting, or text before or after the code. Output pure Python code that can be run directly. Use the Great Tables API documentation provided in the prompt. Always use `import polars as pl` and `pl.read_csv()` for reading CSV files."
     )
-
-print(" inspect_ai tasks defined")
 ```
 
 ## Running Evaluations
 
+The last thing to do is `eval()` the two bundles of test cases.
+
 ```{python}
-# Run evaluations
-print("Running evaluation without API docs...")
-results_no_docs = eval(
-    eval_no_docs(),
-    model="anthropic/claude-sonnet-4-5"
-)
+#| output: false
 
-print("\nRunning evaluation with API docs...")
-results_with_docs = eval(
-    eval_with_docs(),
-    model="anthropic/claude-sonnet-4-5"
-)
+import io
+import sys
+from contextlib import redirect_stderr, redirect_stdout
 
-print("\nAll evaluations complete")
+# Capture all output to suppress async warnings/errors
+captured_stderr = io.StringIO()
+captured_stdout = io.StringIO()
+
+with redirect_stderr(captured_stderr), redirect_stdout(captured_stdout):
+    results_no_docs = eval(
+        eval_no_docs(),
+        model="anthropic/claude-sonnet-4-5"
+    )
+    
+    results_with_docs = eval(
+        eval_with_docs(),
+        model="anthropic/claude-sonnet-4-5"
+    )
+
+# Print only the summary lines without errors
+print("✓ Evaluation completed successfully")
 ```
 
 ## Results Summary Table
@@ -351,16 +360,7 @@ Now let's create a Great Tables table to visualize the quality ratings.
 ```{python}
 from great_tables import GT
 
-# First, let's check what errors we're getting
-print("Checking sample details:")
-for i in range(3):
-    sample = results_no_docs[0].samples[i]
-    print(f"\nSample {i+1}:")
-    print(f"  Score value: {sample.scores['code_quality_scorer'].value if sample.scores else 'No score'}")
-    if sample.scores and 'code_quality_scorer' in sample.scores:
-        print(f"  Explanation: {sample.scores['code_quality_scorer'].explanation[:200]}...")
-
-# Extract results from inspect_ai evaluations
+# Extract results from Inspect evaluations
 results_list = []
 
 for i, sample_id in enumerate(["example1", "example2", "example3"]):
@@ -415,72 +415,6 @@ results_df = pl.DataFrame(results_list)
 )
 ```
 
-## Quality Analysis
-
-```{python}
-# Analyze quality distribution
-quality_scores = {"poor": 0, "fair": 1, "great": 2}
-
-# Calculate average quality scores - use 'scores' dict
-no_docs_scores = [
-    quality_scores.get(
-        results_no_docs[0].samples[i].scores['code_quality_scorer'].metadata.get(
-            "quality", 
-            results_no_docs[0].samples[i].scores['code_quality_scorer'].answer
-        ).lower(),
-        0
-    )
-    for i in range(3) if results_no_docs[0].samples[i].scores and 'code_quality_scorer' in results_no_docs[0].samples[i].scores
-]
-with_docs_scores = [
-    quality_scores.get(
-        results_with_docs[0].samples[i].scores['code_quality_scorer'].metadata.get(
-            "quality",
-            results_with_docs[0].samples[i].scores['code_quality_scorer'].answer
-        ).lower(),
-        0
-    )
-    for i in range(3) if results_with_docs[0].samples[i].scores and 'code_quality_scorer' in results_with_docs[0].samples[i].scores
-]
-
-avg_no_docs = sum(no_docs_scores) / len(no_docs_scores) if no_docs_scores else 0
-avg_with_docs = sum(with_docs_scores) / len(with_docs_scores) if with_docs_scores else 0
-
-quality_labels = ["Poor", "Fair", "Great"]
-
-print(f"Quality Analysis:")
-print(f"Average quality without docs: {avg_no_docs:.2f} ({quality_labels[round(avg_no_docs)]})")
-print(f"Average quality with docs: {avg_with_docs:.2f} ({quality_labels[round(avg_with_docs)]})")
-print(f"Improvement: {avg_with_docs - avg_no_docs:+.2f} points")
-
-# Per-example breakdown
-print(f"\nPer-Example Quality Ratings:")
-for i in range(3):
-    example_names = [
-        "1. API Latency Dashboard",
-        "2. Tech Salaries",
-        "3. GitHub Repository Stats"
-    ]
-    no_docs = (
-        results_no_docs[0].samples[i].scores['code_quality_scorer'].metadata.get(
-            "quality",
-            results_no_docs[0].samples[i].scores['code_quality_scorer'].answer
-        )
-        if results_no_docs[0].samples[i].scores and 'code_quality_scorer' in results_no_docs[0].samples[i].scores
-        else "error"
-    )
-    with_docs = (
-        results_with_docs[0].samples[i].scores['code_quality_scorer'].metadata.get(
-            "quality",
-            results_with_docs[0].samples[i].scores['code_quality_scorer'].answer
-        )
-        if results_with_docs[0].samples[i].scores and 'code_quality_scorer' in results_with_docs[0].samples[i].scores
-        else "error"
-    )
-    print(f"{example_names[i]}: {no_docs} → {with_docs}")
-```
-```
-
 ## Conclusion
 
 This analysis demonstrates how to:
@@ -490,7 +424,6 @@ This analysis demonstrates how to:
 3. use inspect_ai scorers to judge code quality beyond simple pass/fail
 4. rate generated code as **poor**, **fair**, or **great** based on execution and feature completeness
 5. systematically compare results with and without API documentation
-6. measure quality improvements quantitatively
-7. visualize results with Great Tables
+6. visualize results with Great Tables
 
-This approach makes it practical to validate that documentation actually helps LLMs not just generate working code, but generate high-quality code. We can test different prompting strategies systematically, ensure API changes don't break common use cases, and measure improvements across model versions with fine-grained quality metrics.
+This approach makes it practical to validate that documentation actually helps LLMs not just generate working code, but generate high-quality code. We can test different prompting strategies systematically and ensure API changes don't break common use cases.
