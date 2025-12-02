@@ -1,5 +1,5 @@
 ---
-title: "Evaluating Great Tables Code Generation with chatlas and inspect_ai"
+title: "Evaluating Great Tables Code Generation with chatlas and Inspect"
 author: Rich Iannone
 date: 2025-11-20
 jupyter: python3
