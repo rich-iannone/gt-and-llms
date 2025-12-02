@@ -13,7 +13,7 @@ html-table-processing: none
 
 If you've used Claude, ChatGPT, or other LLM interfaces lately, you've noticed something: they love presenting information in tables. And for good reason. Tables are incredibly effective at organizing structured information.
 
-But here's the disconnect: when you're analyzing data in a Python notebook, you need tables that live in your code, not just in a chat interface. You want the same control over tables that you have with [plotnine](https://plotnine.org) or [seaborn](https://seaborn.pydata.org) for visualizations. You want reproducible, extensible, and beautiful tables that work with your data pipelines.
+When you're analyzing data in a Python notebook, you need tables that live in your code, not just in a chat interface. You want the same control over tables that you have with [plotnine](https://plotnine.org) or [seaborn](https://seaborn.pydata.org) for visualizations. You want reproducible, extensible, and beautiful tables that work with your data pipelines.
 
 This is where [Great Tables](https://posit-dev.github.io/great-tables/) shines. Great Tables is a Python library designed for quickly generating sophisticated tables in your notebook, whether you're writing the code yourself or working with an LLM assistant. More importantly, it gives you something Markdown tables can't: a programmatic recipe that adapts to your data and extends with your needs.
 
@@ -21,7 +21,9 @@ Let's explore why Great Tables is the ideal choice when working with LLMs to ana
 
 ## But Do LLMs Actually Work with Great Tables?
 
-Before diving into the *why*, let's address the *does it work?* question with actual data. We systematically tested Claude Sonnet 4.5 on three progressively complex scenarios: (1) a simple table with basic formatting requirements, (2) a salary table with row grouping and currency formatting, and (3) a repository stats table with nanoplots and multi-level styling.
+Before diving into the *why*, let's address the *does it work?* question with actual data. We set out to find out if Great Tables works well with LLMs, we ran these experiments, and this post outlines what we found.
+
+We systematically tested Claude Sonnet 4.5 on three progressively complex scenarios: (1) a simple table with basic formatting requirements, (2) a salary table with row grouping and currency formatting, and (3) a repository stats table with nanoplots and multi-level styling.
 
 Here's what we found:
 
@@ -64,7 +66,7 @@ The natural next step is to structure this information in a table format. This i
 | quarto-cli | TypeScript | 8234 | 456 | 89 | 1234 | 2345 | 5 |
 | plotly.py | Python | 13456 | 2345 | 234 | 4567 | 6789 | 4 |
 
-Much better! The table structure makes comparisons easier. But we're still facing limitations:
+Much better! The table structure makes comparisons easier. But we're still seeing some limitations:
 
 - numbers aren't formatted for readability (1834 vs 1,834)
 - no visual cues for what's important
@@ -451,15 +453,15 @@ When you combine LLMs with Great Tables, you unlock a powerful iterative workflo
 
 Here's how Great Tables fits into this workflow:
 
-1. **You**: "Analyze these sales trends and create a table showing regions, current quarter sales, and trend sparklines"
+1. You: "Analyze these sales trends and create a table showing regions, current quarter sales, and trend sparklines"
 
-2. **LLM**: generates trend values and Great Tables code with `.fmt_nanoplot()`
+2. LLM: generates trend values and Great Tables code with `.fmt_nanoplot()`
 
-3. **You**: see visual trends immediately, spot the declining region, ask follow-up questions
+3. You: see visual trends immediately, spot the declining region, ask follow-up questions
 
-4. **LLM**: updates the code to add conditional formatting on the declining region
+4. LLM: updates the code to add conditional formatting on the declining region
 
-5. **Result**: a publication-ready table that's also a reproducible recipe
+5. Result: a publication-ready table that's also a reproducible recipe
 
 This workflow is impossible with Markdown tables. You'd be stuck asking the LLM to describe trends in text or regenerating static tables repeatedly.
 
@@ -467,15 +469,15 @@ This workflow is impossible with Markdown tables. You'd be stuck asking the LLM 
 
 Humans are visual creatures. We process information much faster when it's presented visually rather than via text. Consider this example:
 
-**Text description** 
+*Text description*
 
 `"The upload endpoint has an average latency of 1,243ms with a P95 of 2,456ms and an error rate of 5.1%, which is significantly higher than other endpoints..."`
 
-**Markdown table**
+*Markdown table*
 
 Better, but you still need to scan and compare numbers mentally.
 
-**Great Tables with color gradients**
+*Great Tables with color gradients*
 
 Instant visual hit as red cells will jump out immediately! You know there's a problem before you even read the numbers.
 
@@ -505,13 +507,13 @@ This doesn't mean plots are bad. Visualizations remain essential for human consu
 
 Our testing of three frontier models revealed clear patterns about what works and what doesn't. Here are strategies based on actual experiments with hundreds of prompts:
 
-**1. Provide API documentation when possible**
+*1. Provide API documentation when possible*
 
 The single biggest factor in success rates: giving the LLM access to API documentation. Without docs, we saw a 17% success rate. With docs, 73% on the first three examples. This isn't about the LLM "learning" the API, it's about giving it the right context to avoid hallucinating methods.
 
 If you're using GitHub Copilot, Claude, or ChatGPT, share relevant API documentation or examples before asking for code. Even a simple "Use the Great Tables documentation at https://posit-dev.github.io/great-tables/" can help.
 
-**2. Start simple, then layer complexity**
+*2. Start simple, then layer complexity*
 
 Our testing showed that simple formatting requests (Example 1: basic number formatting + conditional styling) had a 100% success rate even without docs. Complex requests (Example 3: row grouping + multiple spanners + color gradients) failed completely without context.
 
@@ -523,7 +525,7 @@ Then: "Add a color gradient to the growth column"
 Finally: "Add row groups by region and a title"
 ```
 
-**3. Be explicit about column names and data structure**
+*3. Be explicit about column names and data structure*
 
 One of the most common failures: LLMs hallucinating column names. If your data has `p99_ms` but the LLM assumes it's `p99`, the code crashes.
 
@@ -534,17 +536,17 @@ Share your data structure upfront:
 Create a Great Tables table that formats the millisecond columns..."
 ```
 
-**4. Specify formatting types precisely**
+*4. Specify formatting types precisely*
 
 Don't say "format nicely" or "make it look good". Say exactly what you want:
 
-- ✓ "Format salary columns as USD currency with no decimals"
-- ✓ "Add thousands separators to the requests column"
-- ✓ "Use a blue color gradient on the stars column from 0 to 40000"
+- "Format salary columns as USD currency with no decimals"
+- "Add thousands separators to the requests column"
+- "Use a blue color gradient on the stars column from 0 to 40000"
 
 Our testing showed that vague requests led to hallucinated methods like `.fmt_nice()` or `.auto_format()`.
 
-**5. Use Great Tables' compositional syntax to your advantage**
+*5. Use Great Tables' compositional syntax to your advantage*
 
 Great Tables methods chain naturally, which maps well to how LLMs generate code. When asking for multiple features, list them in the order they'd appear in the code:
 
@@ -558,13 +560,13 @@ Great Tables methods chain naturally, which maps well to how LLMs generate code.
 
 This structure helps LLMs generate correct method chaining.
 
-**6. Leverage nanoplots for trend data**
+*6. Leverage nanoplots for trend data*
 
 In our testing, LLMs handled `.fmt_nanoplot()` surprisingly well when given clear instructions. Trend data stored as comma-separated values (like `"195,210,228,245"`) translates naturally to sparklines with this single method call.
 
-## Testing Your Prompts Systematically with chatlas
+## Testing Your Prompts Systematically with chatlas and Inspect
 
-If you're building a workflow that relies on LLM-generated Great Tables code, you'll want to test your prompts systematically rather than manually checking each output. The [chatlas](https://posit-dev.github.io/chatlas/) Python package provides a powerful way to create automated evaluations.
+If you're building a workflow that relies on LLM-generated Great Tables code, you'll want to test your prompts systematically rather than manually checking each output. The [chatlas](https://posit-dev.github.io/chatlas/) Python package provides a clean interface for interacting with LLMs programmatically, while [Inspect](https://inspect.aisi.org.uk) is an open-source framework for evaluating LLM applications (letting you define test cases, run them systematically, and score the results). Together they create a powerful way to build automated evaluations for code generation tasks.
 
 ### A Complete Working Example
 
@@ -580,14 +582,9 @@ The notebook uses chatlas within the Inspect framework to automatically generate
 
 Check out the full notebook to see the complete implementation, including how to handle code extraction, add missing imports automatically, and create compelling visualizations of evaluation results.
 
-With systematic evals, you can:
+With systematic evals, you can validate that documentation helps through quantifying exactly how much API context improves success rates. Also, you'll inevitably catch regressions by re-running tests when LLM providers update models. All of this builds confidence knowing your prompts work reliably before deploying workflows.
 
-- validate that documentation helps through quantifying exactly how much API context improves success rates
-- test prompt strategies and experiment with different system prompts and measure results
-- catch regressions by re-running tests when LLM providers update models
-- build confidence knowing your prompts work reliably before deploying workflows
-
-If you're building a data app that generates tables or creating tools that help users create Great Tables code, this eval framework lets you validate that your prompts actually work.
+If you're building a data app that generates tables or you're creating tools that help users create Great Tables code, this eval framework lets you validate that your prompts actually work.
 
 ## In Conclusion
 
