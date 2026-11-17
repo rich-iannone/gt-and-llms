@@ -54,13 +54,32 @@ See `harness/trial.py` for what's in a trial directory.
 
 ```bash
 uv run harness/score_trials.py runs/<run-id>      # L0–L2, structure and process metrics
+uv run harness/judge.py absolute runs/<run-id>    # L3: grades each render, 1–5 on five dimensions
+uv run harness/judge.py pairwise runs/<run-id> --arm rich --vs baseline   # L3': blind A/B
 uv run harness/summarize.py runs/<run-id> --split dev
 ```
 
 `score_trials.py` re-runs each trial's `table.py` in a fresh Console session with no model
 attached. It writes `score.json` and a re-rendered `score/table.png` into the trial directory.
-`summarize.py` gives each arm's metrics with bootstrap CIs over prompts, the difference from the
-baseline, and convergence across repeats. The judge (L3) isn't built yet.
+`judge.py` has Opus 5 grade that render against the request and a summary of its data, using
+`judge/` (the instructions and `rubric.md`). It never sees the code, the arm or the truth.
+Absolute grades go to `<trial>/judge/absolute.json` and pairwise verdicts (each pair judged in
+both orders) to `runs/<run-id>/pairwise/<arm>-vs-<vs>/<prompt>/r<n>.json`. Judged trials are
+skipped on later runs unless `--force` is given. `summarize.py` gives each arm's metrics,
+including the mean judge grade, with bootstrap CIs over prompts, the difference from the
+baseline, and convergence across repeats, then each pairwise comparison's win rate.
+
+### Calibrating the judge
+
+```bash
+uv run harness/calibrate.py sample runs/<run-id> --name pilot --seed 1
+uv run harness/calibrate.py sample runs/<run-id> --name pilot-pairs --seed 1 --arm rich --vs baseline
+uv run harness/calibrate.py agree calibration/pilot
+```
+
+`sample` draws about 50 rendered trials (or pairs), evenly across arms and difficulties, into
+`calibration/<name>/`. Open `rate.html`, fill in `ratings.csv` without looking at `key.json`,
+then run the judge on the same run and `agree` to compare its grades with yours.
 
 ## The corpus
 
@@ -79,9 +98,12 @@ uv run harness/check_corpus.py               # every truth renders; every intent
 uv run harness/check_corpus.py peeps_tallest
 uv run harness/split.py --seed N             # dry run of the stratified dev/test split
 VIRTUAL_ENV= uv run --project console/agent-env --with pytest pytest tests -q
+uv run --with pytest pytest tests/test_judge.py -q
 ```
 
 The tests run in the agent's environment because they need GT. Run them from the repo root.
+The judge's tests need chatlas, so they run in the harness environment instead (the agent's
+environment skips them).
 
 ### Writing an intent.py
 
@@ -127,8 +149,10 @@ the `intent.py`: `DATA_COLUMNS = ["car", "msrp"]`.
 | `corpus/<split>/<id>/` | Corpus items (above) |
 | `data/` | CSVs the prompts use |
 | `console/` | Console config, the agent's locked Python env (`agent-env/`), helpers on its path |
-| `harness/` | The trial runner, corpus tools, and scoring (`score/`) |
-| `tests/` | Tests of the scoring library |
+| `harness/` | The trial runner, corpus tools, scoring (`score/`), the judge and calibration |
+| `judge/` | The judge's instructions and rubric |
+| `calibration/` | Calibration samples and their ratings (`harness/calibrate.py`) |
+| `tests/` | Tests of the scoring library and the judge's offline parts |
 | `spikes/phase0/` | Phase 0 feasibility spikes and findings |
 | `archive/2025-llms-txt/` | The 2025 Inspect eval of `llms.txt` and its write-ups |
 
