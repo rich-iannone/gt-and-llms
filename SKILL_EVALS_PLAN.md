@@ -59,7 +59,7 @@ corpus item ──► trial(arm, prompt, repeat)
                  ├─ fresh workspace dir: data/<csv>, (skill refs if arm has a skill)
                  ├─ fresh mcp-console server (one per trial = one isolated session)
                  │     config: sandbox.profile=workspace (writes only to the trial dir),
-                 │             network restricted + allow_local_binding (nokap's CDP port, §5.2),
+                 │             network restricted (nokap's CDP runs over pipes, §5.2),
                  │             python: <uv-locked agent env>, r.resolution=disabled (Phase 0)
                  ├─ chatlas ChatAnthropic(model="claude-sonnet-5", system_prompt=base+arm)
                  │     await mcp_console.chatlas.register(chat, transport_kwargs={cwd, env})
@@ -95,7 +95,12 @@ gt-and-llms/
 > **Resolved in Phase 0 (2026-10-30), option 1.** `chrome-headless-shell --single-process` plus
 > `sandbox.network.allow_local_binding: true` renders inside Console's sandbox. Full Chrome
 > aborts in LaunchServices registration, and multi-process headless-shell is denied
-> `mach-register`. Details are in `spikes/phase0/FINDINGS.md`. The original analysis follows.
+> `mach-register`. Details are in `spikes/phase0/FINDINGS.md`.
+>
+> **Updated 2026-11-16.** nokap `main` (0273091) talks to Chrome over
+> `--remote-debugging-pipe` by default on macOS/Linux, so `allow_local_binding` is gone from
+> `console/config.yaml`. `harness/prepare.py` and one Sonnet 5 trial
+> (`runs/20261116-pin-bump`) pass without it. The original analysis follows.
 
 gt-skill found that headless Chrome can't start under the macOS Claude Code Seatbelt
 profile. Console also uses Seatbelt on macOS, so assume the same problem until a spike
@@ -125,8 +130,8 @@ Revised after Phase 0. The attach API (option 2) is no longer needed.
 - A supported way to add Chrome args without code changes (for example, `NOKAP_CHROME_ARGS`),
   or automatic `--single-process` when a sandbox is detected. This replaces the spike's
   `sitecustomize.py` shim.
-- Optional: CDP over `--remote-debugging-pipe`, which drops the loopback port and the
-  `allow_local_binding` requirement
+- ~~Optional: CDP over `--remote-debugging-pipe`, which drops the loopback port and the
+  `allow_local_binding` requirement~~ Done on nokap `main` (#2), and the default on POSIX
 - Fix: `Chrome.__del__` raises `AttributeError` when `__init__` fails before `_process` is set
 - `nokap doctor` reports sandbox-related launch failures clearly (SIGABRT from LaunchServices,
   `bootstrap_check_in ... Permission denied`)
@@ -170,8 +175,8 @@ split, alongside cost per trial.
 | Phase | Work | Exit criterion |
 |---|---|---|
 | **0. Spikes** ✅ 2026-10-30 | (a) chatlas + `mcp_console.chatlas.register` + Sonnet 5: one trial end to end, image returned to the model; (b) nokap/Chrome under the Console sandbox on macOS (§5.2 options 1→2); (c) measure the cost and latency of one trial | A table rendered from inside Console and seen by the model; a cost-per-trial estimate. **Met:** $0.015–0.14 and 10–63s per trial; see `spikes/phase0/FINDINGS.md` |
-| **1. nokap** | Attach API and/or headless-shell support; release | `gtsave()` works inside the Console sandbox. **Status 2026-11-05:** `feat-sandboxed-chrome` is merged to nokap `main` (adds `install-chrome`, `NOKAP_CHROME_ARGS`, an automatic `--single-process` retry, and the `__del__` fix). Not yet on PyPI, which is still at 0.1.0. Pipe transport not started. |
-| **2. Repo reset** | Archive the 2025 work; uv project; Console config; skeleton harness | `harness/run.py --arm baseline --prompt <id>` produces a trial dir. **Met 2026-11-05:** `runs/phase2-check-deny/baseline/api_latency/r1` (3 tool calls, 1 image, 11s, $0.022). The agent's only tool is Console's `send`. The sandbox denies reads of the repo (corpus, arms, runs, `.env`, `.git`), its sibling projects, `~/py_projects` and `~/.claude`, and `harness/prepare.py` checks this on every setup. The agent env pins GT `main` 024ca9d and nokap `main` c74bd46 (Q4); Chrome for Testing 156.0.8078.80 is installed into `.browsers/` by `harness/prepare.py`. |
+| **1. nokap** | Attach API and/or headless-shell support; release | `gtsave()` works inside the Console sandbox. **Status 2026-11-05:** `feat-sandboxed-chrome` is merged to nokap `main` (adds `install-chrome`, `NOKAP_CHROME_ARGS`, an automatic `--single-process` retry, and the `__del__` fix). Not yet on PyPI, which is still at 0.1.0. **2026-11-16:** pipe transport merged (#2) and is the default on POSIX; the agent env now pins nokap `main` 0273091. Remaining: a PyPI release. |
+| **2. Repo reset** | Archive the 2025 work; uv project; Console config; skeleton harness | `harness/run.py --arm baseline --prompt <id>` produces a trial dir. **Met 2026-11-05:** `runs/phase2-check-deny/baseline/api_latency/r1` (3 tool calls, 1 image, 11s, $0.022). The agent's only tool is Console's `send`. The sandbox denies reads of the repo (corpus, arms, runs, `.env`, `.git`), its sibling projects, `~/py_projects` and `~/.claude`, and `harness/prepare.py` checks this on every setup. The agent env pins GT `main` 9516ea8 and nokap `main` 0273091 (Q4; bumped 2026-11-16 from 024ca9d and c74bd46, together with mcp-console 0.0.6 → 0.0.7, whose `send()` now returns a `ConsoleResult`); Chrome for Testing 156.0.8078.80 is installed into `.browsers/` by `harness/prepare.py`. |
 | **3. Corpus** | Port, replace and add prompts; `truth.py` on GT 1.1; human-written `intent.py`; dev/test split | All truths render; all assertions pass on their own truth. **Status 2026-11-05:** 36 items (12 easy / 12 medium / 12 hard; 10 spec, 26 intent), and all 36 truths render. 20 are gt-skill ports in `corpus/unsplit/` (prompts verbatim). The 3 gt-and-llms spec prompts have model-drafted truths, reviewed by Rich. 13 model-drafted items (2 airquality/islands replacements, 4 more intent items, 7 spec items on newer features) have prompts and truths reviewed by Rich. The L1 library (`harness/score/intent.py`, 47 tests) reads every truth correctly. No `intent.py` yet (Rich writes these). `harness/split.py --seed N` makes the split: 24 dev / 12 test in a dry run. Possible GT gaps found: `fmt_chem` leaves `O(^1D)` literal; locale `de` puts € before the amount |
 | **4. Scoring** | L0–L2, process metrics, convergence; judge rubric; calibration sample | Judge vs human agreement meets the bar; rubric frozen. **Status 2026-11-05:** L0–L2, structure and process metrics are built (`harness/score_trials.py`, `harness/summarize.py`). Each `table.py` is re-run in a fresh, model-free Console session under the trial sandbox. L2 matches each of the truth's visible columns to a candidate column by values (an `intent.py` can narrow this with `DATA_COLUMNS`). GT API errors are counted from the trial's Console recordings. Checked end to end on 3 baseline trials of `api_latency` (`runs/phase4-check`). The judge's rubric is drafted (`judge/`) and awaits Rich's review. The judge code and the calibration sample are not started |
 | **5. Skill authoring** (Rich, by hand) | Revise the `feat-claude-skill` SKILL.md for GT 1.1: API-accurate method guidance, common mistakes, references/ | Skill v1 frozen (SHA + hash in PROVENANCE.md) |
@@ -202,4 +207,9 @@ split, alongside cost per trial.
 4. Which GT version the eval pins. great-tables `main` is 779 commits past v1.1.0. The
    pandas-int64 nanoplot failure Phase 0 hit (BUGS.md #115 (b)) is already fixed on `main`
    by #1008, so it doesn't need filing. Recommendation: pin the next GT release (or a `main`
-   SHA in `agent-env`) so the skill and the eval target the same API.
+   SHA in `agent-env`) so the skill and the eval target the same API. **2026-11-16:** bumped
+   to `main` 9516ea8 (1335 commits past v1.1.0, mostly GTI). All 36 truths still pass
+   with L2 = 1.00. 16 `truth.png` files came out 2px taller, most likely from the column-label
+   padding and footer-order fixes (#1134, #1133), and were regenerated. Re-pin to the latest
+   `main` once more before freezing skill v1, so the skill is written against the API it's
+   evaluated on.
