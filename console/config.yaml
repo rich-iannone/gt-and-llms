@@ -1,0 +1,37 @@
+# Console settings shared by every trial. harness/console.py resolves the relative paths below
+# against the repo root and writes the result to <trial>/console.yaml, which the server is
+# started with (--config-file, so no global or project config leaks in).
+languages:
+  - python
+# A uv-locked env rather than managed Python: tighter pinning, and managed preparation goes
+# through R's `ir`, which fails on R 4.2.3 on the dev host (spikes/phase0/FINDINGS.md)
+python: console/agent-env/.venv
+# Even Python-only sessions otherwise prepare R bridge packages through `ir`
+r:
+  resolution: disabled
+sandbox:
+  profile: workspace
+  filesystem:
+    # The workspace profile still lets the agent read most host files. Deny those that could
+    # leak eval material: Claude Code transcripts, source checkouts (the GT skill lives in
+    # great-tables). harness/console.py adds the repo itself (corpus, other arms' skills, other
+    # trials, .env, .git) apart from what the agent's Python needs, and the repo's siblings.
+    # A deny can't be re-allowed underneath, so the agent's paths are kept off this list.
+    deny:
+      - ~/.claude
+      - ~/.ssh
+      - ~/py_projects
+  network:
+    proxy:
+      mode: full
+      domains:
+        allow: []
+    # nokap binds a loopback port for Chrome's DevTools endpoint
+    allow_local_binding: true
+environment:
+  # chrome-headless-shell installed by harness/prepare.py; full Chrome can't start under Seatbelt
+  NOKAP_CACHE_DIR: .browsers
+  # nokap would retry with this after a mach-register denial; setting it skips the failed launch
+  NOKAP_CHROME_ARGS: --single-process
+  PYTHONPATH: console/agent_site
+  MPLBACKEND: agg
