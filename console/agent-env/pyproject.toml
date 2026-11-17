@@ -2,7 +2,7 @@
 #
 # great-tables and nokap are pinned to main SHAs until their next releases (plan §10 Q4):
 # GT main has fixes past v1.1.0 (e.g. #1008, nanoplots on pandas int64), and nokap's
-# sandbox support (install-chrome, NOKAP_CHROME_ARGS) isn't on PyPI yet.
+# sandbox support (install-chrome, NOKAP_CHROME_ARGS, the pipe transport) isn't on PyPI yet.
 [project]
 name = "gt-eval-agent-env"
 version = "0"
@@ -21,5 +21,5 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
-great-tables = { git = "https://github.com/posit-dev/great-tables", rev = "024ca9d1bbfafb2cb5fa5e98e82377b341b8268a" }
-nokap = { git = "https://github.com/posit-dev/nokap", rev = "c74bd46d59353f31a4a750c0168a50e9016bd356" }
+great-tables = { git = "https://github.com/posit-dev/great-tables", rev = "9516ea8654e2d45a2d642c6fddc6a7e2e9b14cc7" }
+nokap = { git = "https://github.com/posit-dev/nokap", rev = "0273091dac7418c1c36b53cc136d257a2fe48e45" }
