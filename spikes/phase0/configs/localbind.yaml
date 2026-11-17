@@ -1,0 +1,8 @@
+sandbox:
+  profile: workspace
+  network:
+    proxy:
+      mode: full
+      domains:
+        allow: []
+    allow_local_binding: true

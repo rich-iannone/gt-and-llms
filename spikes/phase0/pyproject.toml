@@ -1,0 +1,15 @@
+[project]
+name = "phase0-spikes"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "chatlas[anthropic]>=0.23",
+    "great-tables==1.1.0",
+    "matplotlib>=3.11.2",
+    "mcp-console[chatlas]==0.0.6",
+    "nokap>=0.1.0",
+    "pandas>=3.1.0",
+    "polars>=2.1.0",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.3",
+]
