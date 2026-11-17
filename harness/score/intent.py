@@ -39,22 +39,43 @@ import great_tables as gt
 import numpy as np
 import pandas as pd
 from great_tables._data_color.constants import COLOR_NAME_TO_HEX
+from great_tables._text import BaseText
 from great_tables._tbl_data import _get_cell, cast_frame_to_string, replace_null_frame
 
 # ---- Text ------------------------------------------------------------------------------
 
 
-def plain(x: Any) -> str:
-    """Text without markup: GT Text objects, HTML tags and entities, extra whitespace."""
+def as_html(x: Any) -> str:
+    """A label or cell as HTML: GT Text objects (md(), html(), units) rendered, else str()."""
     if x is None:
         return ""
-    x = getattr(x, "text", x)
-    s = re.sub(r"<[^>]+>", " ", str(x))
+    if isinstance(x, BaseText):
+        try:
+            return x.to_html()
+        except NotImplementedError:
+            pass
+    return str(getattr(x, "text", x))
+
+
+def plain(x: Any) -> str:
+    """Text without markup: GT Text objects, HTML tags and entities, extra whitespace."""
+    s = re.sub(r"<[^>]+>", " ", as_html(x))
     return re.sub(r"\s+", " ", html_lib.unescape(s)).strip()
 
 
 def _norm(x: Any) -> str:
     return plain(x).casefold()
+
+
+# Sub- and superscript digits and signs as plain ones, so "O₃", "O<sub>3</sub>" and "O3"
+# compare equal
+_SCRIPTS = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻₀₁₂₃₄₅₆₇₈₉₊₋\N{MINUS SIGN}", "0123456789+-0123456789+--")
+
+
+def fold(x: Any) -> str:
+    """Text for comparing notation: no markup, case or whitespace, and sub- and
+    superscripts as plain digits ("J Hz⁻¹" and "J Hz<sup>-1</sup>" both give "jhz-1")."""
+    return re.sub(r"\s+", "", _norm(x).translate(_SCRIPTS))
 
 
 _MISSING_TEXT = {"nan", "none", "<na>", "null", "nat", "na"}
@@ -234,6 +255,15 @@ def compact(decimals: int | None = None) -> str:
     return rf"{_SIGN}\$?(?:\d{{1,3}}{frac}\s?[KMBT]|\d{{1,3}}(?:\.\d+)?)"
 
 
+def scientific(decimals: int | None = None) -> str:
+    """Scientific notation as a table shows it: 6.63 × 10^-34 from GT (6.63 × 10−34 once
+    the superscript is plain text), or with superscript digits. Python's 6.63e-34 doesn't
+    count. The power of ten can be left off where it's 10^0."""
+    frac = r"(?:\.\d+)?" if decimals is None else (rf"\.\d{{{decimals}}}" if decimals else "")
+    exp = r"[-+\N{MINUS SIGN}⁻⁺]?[\d⁰¹²³⁴⁵⁶⁷⁸⁹]+"
+    return rf"{_MINUS}\d{frac}(?:\s?[×x·]\s?10\s?\^?\s?{exp})?"
+
+
 INTEGER = number(0)
 CURRENCY = currency()
 PERCENT = percent()
@@ -255,6 +285,7 @@ class Column:
 
     var: str
     label: str = ""
+    label_html: str = ""
     kind: str = "default"  # default, stub, row_group, hidden
     raw: list[Any] = field(default_factory=list)
     text: list[str] = field(default_factory=list)
@@ -342,6 +373,7 @@ class Table:
                 Column(
                     var=info.var,
                     label=plain(info.column_label),
+                    label_html=as_html(info.column_label),
                     kind=info.type.name,
                     raw=[data[info.var].iloc[i] for i in self.order_idx],
                     text=[plain(c) for c in cells],
@@ -349,7 +381,12 @@ class Table:
                 )
             )
         self.spanners = [
-            {"label": plain(s.spanner_label), "vars": list(s.vars), "level": s.spanner_level}
+            {
+                "label": plain(s.spanner_label),
+                "html": as_html(s.spanner_label),
+                "vars": list(s.vars),
+                "level": s.spanner_level,
+            }
             for s in tbl._spanners
         ]
         self.title_text = plain(tbl._heading.title)
@@ -436,6 +473,10 @@ class Table:
         self.results.append(Result(check, bool(passed), detail))
         return bool(passed)
 
+    def expect(self, check: str, passed: bool, detail: str = "") -> bool:
+        """Record an item's own check, for what the checks below don't cover."""
+        return self._record(check, passed, detail)
+
     def _resolve(self, cols: str | Column | Sequence[str | Column]) -> list[Column]:
         items = [cols] if isinstance(cols, str | Column) else list(cols)
         return [c if isinstance(c, Column) else self.col(c) for c in items]
@@ -484,7 +525,7 @@ class Table:
         self, col: str | Column, expected: Column | Sequence[Any], ordered: bool = False
     ) -> bool:
         """A column holds the expected values (e.g. `truth.col("car")`), in display order
-        if `ordered`. Numbers match within rounding; text ignores case and markup."""
+        if `ordered`. Numbers match within rounding; text as `fold` gives it."""
         (c,) = self._resolve(col)
         check = f"values of {c.var}"
         if self._missing(check, [c]):
@@ -740,14 +781,14 @@ _SCALES = [1, 100, 0.01, 1e3, 1e-3, 1e6, 1e-6, 1e9, 1e-9]
 def values_match(cand: Column, exp: Column, ordered: bool = False) -> bool:
     """Whether a column shows the expected values: numbers at the precision the column
     shows them (at any of the usual scalings, e.g. 0.12 vs 12%), otherwise text ignoring
-    case and markup."""
+    case, markup and spacing, with sub- and superscripts as plain digits (`fold`)."""
     if len(cand.raw) != len(exp.raw):
         return False
     e = exp.num
     if not np.isnan(e).all():
         return _numbers_match(cand, e, ordered)
-    a = [_norm(t) for t in cand.text]
-    b = [_norm(t) for t in exp.text]
+    a = [fold(t) for t in cand.text]
+    b = [fold(t) for t in exp.text]
     return a == b if ordered else sorted(a) == sorted(b)
 
 
