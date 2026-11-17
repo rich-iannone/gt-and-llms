@@ -1,15 +1,15 @@
 # The Python the agent runs inside Console. Every trial records this lockfile's hash.
 #
-# great-tables and nokap are pinned to main SHAs until their next releases (plan §10 Q4):
-# GT main has fixes past v1.1.0 (e.g. #1008, nanoplots on pandas int64), and nokap's
-# sandbox support (install-chrome, NOKAP_CHROME_ARGS, the pipe transport) isn't on PyPI yet.
+# great-tables is pinned to a main SHA until its next release (plan §10 Q4): GT main has
+# fixes past v1.1.0 (e.g. #1008, nanoplots on pandas int64). nokap 0.2.0 is the first release
+# with its sandbox support (install-chrome, NOKAP_CHROME_ARGS, the pipe transport).
 [project]
 name = "gt-eval-agent-env"
 version = "0"
 requires-python = "==3.12.*"
 dependencies = [
   "great-tables",
-  "nokap",
+  "nokap==0.2.0",
   "polars==2.1.0",
   "pandas",
   "numpy",
@@ -22,4 +22,3 @@ package = false
 
 [tool.uv.sources]
 great-tables = { git = "https://github.com/posit-dev/great-tables", rev = "9516ea8654e2d45a2d642c6fddc6a7e2e9b14cc7" }
-nokap = { git = "https://github.com/posit-dev/nokap", rev = "0273091dac7418c1c36b53cc136d257a2fe48e45" }
