@@ -132,8 +132,35 @@ def test_summarize_pairwise(tmp_path):
             rec["consistent"] = consistent
         (comp / rel).parent.mkdir(parents=True, exist_ok=True)
         (comp / f"{rel}.json").write_text(json.dumps(rec))
-    row = summarize.pairwise(tmp_path, None)["rich-vs-baseline"]
+    loaded = summarize.load_pairs(tmp_path, None)
+    row = summarize.pairwise(loaded)["rich-vs-baseline"]
     # Prompts weigh equally: mean(0.75, 0.0)
     assert row["mean"] == pytest.approx(0.375) and row["prompts"] == 2 and row["pairs"] == 3
     # The pair decided by a missing render isn't counted for consistency
     assert row["consistent"] == pytest.approx(0.5) and row["instructions"] == 1
+    # One comparison: no Bradley-Terry
+    assert summarize.bradley_terry(loaded) is None
+
+
+def _pairs(scores: dict[str, list[float]]) -> list[dict]:
+    return [{"prompt": p, "arm_score": s} for p, xs in scores.items() for s in xs]
+
+
+def test_bradley_terry():
+    p = summarize._bt_fit({("a", "b"): [10, 7.0]})
+    # With the prior's virtual tie: a scores 7.5 of 11
+    assert p["a"] / (p["a"] + p["b"]) == pytest.approx(7.5 / 11)
+    # rich beats baseline and baseline beats prose, never compared with rich directly
+    pairs = {
+        "rich-vs-baseline": _pairs({f"p{i}": [1.0, 1.0, 0.5] for i in range(4)}),
+        "prose-vs-baseline": _pairs({f"p{i}": [0.0, 0.5, 0.5] for i in range(4)}),
+    }
+    bt = summarize.bradley_terry(pairs)
+    assert bt["reference"] == "baseline" and bt["prompts"] == 4
+    arms = bt["arms"]
+    assert arms["baseline"]["mean"] == pytest.approx(0.5)
+    assert arms["rich"]["mean"] > 0.7 and arms["prose"]["mean"] < 0.4
+    assert arms["rich"]["ci"][0] <= arms["rich"]["mean"] <= arms["rich"]["ci"][1]
+    # Comparisons that don't link every arm to the baseline give no fit
+    split = {"rich-vs-prose": pairs["rich-vs-baseline"], "llms_txt-vs-baseline": []}
+    assert summarize.bradley_terry(split) is None
