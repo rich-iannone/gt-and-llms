@@ -1,0 +1,10 @@
+---
+format: pdf
+---
+
+
+```{python}
+from great_tables import GT, exibble
+
+GT(exibble)
+```
