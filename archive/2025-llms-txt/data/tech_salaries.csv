@@ -1,0 +1,11 @@
+role,level,base_salary,bonus,equity,total_comp,yoe,location
+Software Engineer,L3,145000,15000,45000,205000,3,San Francisco
+Software Engineer,L4,185000,25000,95000,305000,6,San Francisco
+Senior Engineer,L5,235000,40000,165000,440000,10,New York
+Staff Engineer,L6,285000,55000,285000,625000,14,Seattle
+Principal Engineer,L7,340000,75000,485000,900000,18,San Francisco
+Data Scientist,L3,155000,18000,50000,223000,4,Austin
+Data Scientist,L4,195000,28000,105000,328000,7,Boston
+Product Manager,L4,175000,35000,85000,295000,5,San Francisco
+Product Manager,L5,225000,50000,175000,450000,9,New York
+Engineering Manager,L5,245000,45000,155000,445000,11,Seattle

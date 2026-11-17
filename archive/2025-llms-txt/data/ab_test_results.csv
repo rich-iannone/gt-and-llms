@@ -1,0 +1,5 @@
+variant,users,conversions,revenue,avg_session_sec,bounce_rate
+Control,50000,2345,234500,245,0.42
+Test A,50000,2678,294350,289,0.38
+Test B,50000,2234,256780,267,0.45
+Test C,50000,2890,321450,312,0.35
