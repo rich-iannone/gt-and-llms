@@ -26,8 +26,7 @@ sandbox:
       mode: full
       domains:
         allow: []
-    # nokap binds a loopback port for Chrome's DevTools endpoint
-    allow_local_binding: true
+    # No allow_local_binding: nokap talks to Chrome over pipes, not a loopback port
 environment:
   # chrome-headless-shell installed by harness/prepare.py; full Chrome can't start under Seatbelt
   NOKAP_CACHE_DIR: .browsers
