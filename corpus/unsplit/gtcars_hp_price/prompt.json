@@ -1,0 +1,10 @@
+{
+  "id": "gtcars_hp_price",
+  "style": "intent",
+  "difficulty": "easy",
+  "data": [
+    "gtcars.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Show me a table of the gt cars with their horsepower and price."
+}

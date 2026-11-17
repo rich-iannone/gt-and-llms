@@ -1,0 +1,10 @@
+{
+  "id": "exibble_german_locale",
+  "style": "spec",
+  "difficulty": "easy",
+  "data": [
+    "exibble.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Load the exibble data from `exibble.csv` using Polars, then create a Great Tables table that:\n- shows the char, num, currency and date columns\n- formats num with two decimal places, using German number conventions\n- formats currency in euros, also using German conventions\n- formats date as a long date in German (e.g. \"15 Januar 2015\")\n- shows missing values as an em dash\n- adds a title \"Exibble auf Deutsch\"\n\nThe CSV has columns: num, char, fctr, date, time, datetime, currency, row, group"
+}

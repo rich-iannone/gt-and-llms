@@ -1,0 +1,10 @@
+{
+  "id": "reactions_cyclic_alkenes",
+  "style": "spec",
+  "difficulty": "hard",
+  "data": [
+    "reactions.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Load the reaction rate data from `reactions.csv` using Polars, then create a Great Tables table that:\n- shows the cyclic monoalkenes (cmpd_type is \"cyclic monoalkene\") that have room-temperature rate constants for all three of OH, O3 and NO3\n- shows each compound's name, and its chemical formula with proper subscripts\n- shows the three rate constants (OH_k298, O3_k298, NO3_k298) in scientific notation with two decimal places\n- puts the rate constants under a spanner labeled \"Rate constant at 298 K\" that also shows their units, cm³ molecule⁻¹ s⁻¹\n- labels the rate constant columns \"OH\", \"O₃\" and \"NO₃\"\n- sorts by the OH rate constant, fastest first\n- adds a title \"Cyclic Monoalkene Reactivity\"\n\nThe CSV has columns: cmpd_name, cmpd_mwt, cmpd_formula, cmpd_type, cmpd_smiles, cmpd_inchi, cmpd_inchikey, and for each oxidant X in OH, O3, NO3 and Cl: X_k298, X_uncert, X_u_fac, X_A, X_B, X_n, X_t_low, X_t_high"
+}

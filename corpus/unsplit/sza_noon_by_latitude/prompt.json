@@ -1,0 +1,10 @@
+{
+  "id": "sza_noon_by_latitude",
+  "style": "intent",
+  "difficulty": "medium",
+  "data": [
+    "sza.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Compare the solar zenith angle at solar noon for each month of the year across the four latitudes in the data."
+}

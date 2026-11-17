@@ -1,0 +1,10 @@
+{
+  "id": "pizzaplace_category_performance",
+  "style": "intent",
+  "difficulty": "medium",
+  "data": [
+    "pizzaplace.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Compare pizza sales performance across pizza categories for 2015 \u2014 for each category, show total revenue, order count, and average pizza price."
+}

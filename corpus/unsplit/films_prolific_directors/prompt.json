@@ -1,0 +1,10 @@
+{
+  "id": "films_prolific_directors",
+  "style": "intent",
+  "difficulty": "medium",
+  "data": [
+    "films.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Show me the 10 most prolific directors in the films dataset \u2014 for each, their total number of films, average runtime, and the years spanning their earliest and latest film."
+}

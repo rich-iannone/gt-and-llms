@@ -1,0 +1,10 @@
+{
+  "id": "pizzaplace_top_pizzas",
+  "style": "intent",
+  "difficulty": "easy",
+  "data": [
+    "pizzaplace.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Show me the ten best-selling pizzas of 2015 by total revenue, along with how many were ordered."
+}

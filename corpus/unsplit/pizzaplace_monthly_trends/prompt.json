@@ -1,0 +1,10 @@
+{
+  "id": "pizzaplace_monthly_trends",
+  "style": "intent",
+  "difficulty": "hard",
+  "data": [
+    "pizzaplace.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "For each pizza category, show the total revenue and number of pizzas sold in 2015, with a small chart of how revenue changed month to month, and a total for the whole year."
+}

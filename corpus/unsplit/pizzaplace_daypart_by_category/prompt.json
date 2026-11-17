@@ -1,0 +1,10 @@
+{
+  "id": "pizzaplace_daypart_by_category",
+  "style": "intent",
+  "difficulty": "hard",
+  "data": [
+    "pizzaplace.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Analyze pizzaplace demand patterns by day-part and pizza category \u2014 for each combination of day-part (morning, lunch, afternoon, dinner) and pizza category, show total revenue, order count, and average order value."
+}

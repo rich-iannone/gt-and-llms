@@ -1,0 +1,10 @@
+{
+  "id": "towny_growth_trends",
+  "style": "intent",
+  "difficulty": "hard",
+  "data": [
+    "towny.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Create a table showing population growth trends for the top 15 fastest-growing Ontario towns, comparing their density changes across all census years from 1996 to 2021, with the percentage changes between each period."
+}

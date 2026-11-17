@@ -1,0 +1,10 @@
+{
+  "id": "metro_busiest_stations",
+  "style": "intent",
+  "difficulty": "easy",
+  "data": [
+    "metro.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Show me the 10 busiest Paris Metro stations by annual passenger count, with which line(s) they serve."
+}

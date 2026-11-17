@@ -1,0 +1,10 @@
+{
+  "id": "countrypops_decade_growth",
+  "style": "intent",
+  "difficulty": "hard",
+  "data": [
+    "countrypops.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Show population trajectories decade-by-decade for the 10 most populous countries in 2020, from 1970 through 2020, with the growth percentage over each decade."
+}

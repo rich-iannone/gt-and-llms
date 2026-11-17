@@ -1,0 +1,10 @@
+{
+  "id": "peeps_canada_directory",
+  "style": "spec",
+  "difficulty": "medium",
+  "data": [
+    "peeps.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Load the people data from `peeps.csv` using Polars, then create a Great Tables table that:\n- shows only the people who live in Canada (country is \"CAN\")\n- combines name_given and name_family into a single \"Name\" column\n- combines city and state_prov into a single \"Location\" column, as \"City, Province\"\n- makes each email address a clickable link\n- shows gender as an icon of a woman or a man instead of as text\n- sorts by family name\n- adds a title \"Canadian Contacts\"\n\nThe CSV has columns: name_given, name_family, address, city, state_prov, postcode, country, email_addr, phone_number, country_code, gender, dob, height_cm, weight_kg"
+}

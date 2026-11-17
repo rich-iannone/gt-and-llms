@@ -1,0 +1,10 @@
+{
+  "id": "countrypops_fastest_growing",
+  "style": "intent",
+  "difficulty": "medium",
+  "data": [
+    "countrypops.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "Compare population growth from 2000 to 2020 for the 15 fastest-growing countries in the world (of countries with at least one million residents in 2000)."
+}

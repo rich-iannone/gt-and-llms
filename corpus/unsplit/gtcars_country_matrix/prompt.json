@@ -1,0 +1,10 @@
+{
+  "id": "gtcars_country_matrix",
+  "style": "intent",
+  "difficulty": "hard",
+  "data": [
+    "gtcars.csv"
+  ],
+  "source": "HrudithL/gt-skill@d1ed4e6 (verbatim)",
+  "prompt": "For each country of origin in the gtcars dataset, compare its cars \u2014 the average and highest horsepower, the average and highest MSRP, and how many specific cars come from that country."
+}

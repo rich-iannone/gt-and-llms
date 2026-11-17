@@ -1,0 +1,10 @@
+{
+  "id": "peeps_tallest",
+  "style": "intent",
+  "difficulty": "easy",
+  "data": [
+    "peeps.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Show the 10 tallest people in the peeps data with their height, weight, and the country they live in."
+}

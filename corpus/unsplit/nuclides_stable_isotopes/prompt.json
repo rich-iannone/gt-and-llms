@@ -1,0 +1,10 @@
+{
+  "id": "nuclides_stable_isotopes",
+  "style": "intent",
+  "difficulty": "hard",
+  "data": [
+    "nuclides.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "For the elements from hydrogen to neon, show the stable isotopes with their natural abundance and atomic mass, including the uncertainty of each, grouped by element."
+}

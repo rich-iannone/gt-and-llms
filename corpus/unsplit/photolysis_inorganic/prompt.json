@@ -1,0 +1,10 @@
+{
+  "id": "photolysis_inorganic",
+  "style": "intent",
+  "difficulty": "easy",
+  "data": [
+    "photolysis.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Make a table of the inorganic photolysis reactions, showing each compound and what it breaks down into."
+}

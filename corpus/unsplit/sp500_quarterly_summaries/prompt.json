@@ -1,0 +1,10 @@
+{
+  "id": "sp500_quarterly_summaries",
+  "style": "spec",
+  "difficulty": "medium",
+  "data": [
+    "sp500.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Load the S&P 500 data from `sp500.csv` using Polars, then create a Great Tables table that:\n- has one row per month of 2015, with the month's average closing price and total trading volume\n- groups the months by quarter (Q1 to Q4)\n- adds a summary row to each quarter with the quarter's total volume\n- adds a grand total row at the bottom with the year's total volume\n- formats prices as dollars with two decimal places, and volumes in billions (e.g. 65.2B)\n- adds a title \"S&P 500 in 2015\"\n\nThe CSV has columns: date, open, high, low, close, volume, adj_close"
+}

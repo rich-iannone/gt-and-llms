@@ -1,0 +1,10 @@
+{
+  "id": "constants_planck_units",
+  "style": "spec",
+  "difficulty": "easy",
+  "data": [
+    "constants.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Load the physical constants from `constants.csv` using Polars, then create a Great Tables table that:\n- shows the constants whose names start with \"Planck\"\n- shows each constant's name, value, uncertainty and units\n- formats value and uncertainty in scientific notation\n- shows \"exact\" where a constant has no uncertainty\n- renders the units with real superscripts, so `J Hz^-1` reads as J Hz⁻¹\n- puts the name column in the stub\n- adds a title \"Planck Constants\"\n\nThe CSV has columns: name, value, uncert, sf_value, sf_uncert, units"
+}

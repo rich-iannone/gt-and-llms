@@ -1,0 +1,10 @@
+{
+  "id": "tech_salaries",
+  "style": "spec",
+  "difficulty": "medium",
+  "data": [
+    "tech_salaries.csv"
+  ],
+  "source": "gt-and-llms 2025, eval_dataset_no_docs.jsonl (verbatim)",
+  "prompt": "Using Great Tables, create a table from `tech_salaries.csv` that:\n- Groups rows by role\n- Formats all salary/compensation columns as currency (no cents)\n- Colors the total_comp column using a gradient from white to green, with higher values darker\n- Shows the location in a smaller, gray font\n- Adds column spanners: \"Role\" for role/level, \"Compensation\" for the money columns, \"Details\" for yoe/location\n\nThe CSV has columns: role, level, base_salary, bonus, equity, total_comp, yoe, location"
+}

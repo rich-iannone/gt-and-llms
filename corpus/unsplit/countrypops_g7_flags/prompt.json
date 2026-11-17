@@ -1,0 +1,10 @@
+{
+  "id": "countrypops_g7_flags",
+  "style": "spec",
+  "difficulty": "easy",
+  "data": [
+    "countrypops.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Load the country populations from `countrypops.csv` using Polars, then create a Great Tables table that:\n- shows the 2022 population of the G7 countries (Canada, France, Germany, Italy, Japan, the United Kingdom and the United States)\n- shows each country's flag in a column next to its name, using the two-letter country code\n- formats population in millions with one decimal place (e.g. 38.9M)\n- sorts by population, largest first\n- adds a title \"G7 Populations, 2022\"\n\nThe CSV has columns: country_name, country_code_2, country_code_3, year, population"
+}

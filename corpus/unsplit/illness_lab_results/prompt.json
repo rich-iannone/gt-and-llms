@@ -1,0 +1,10 @@
+{
+  "id": "illness_lab_results",
+  "style": "intent",
+  "difficulty": "medium",
+  "data": [
+    "illness.csv"
+  ],
+  "source": "proposed: model-drafted 2026-11-05, reviewed by Rich 2026-11-05",
+  "prompt": "Show the patient's lab results from day 3 to day 9 alongside each test's normal range, and make it easy to see which results fall outside that range."
+}

@@ -1,0 +1,10 @@
+{
+  "id": "github_repos",
+  "style": "spec",
+  "difficulty": "hard",
+  "data": [
+    "github_repos.csv"
+  ],
+  "source": "gt-and-llms 2025, eval_dataset_no_docs.jsonl (verbatim)",
+  "prompt": "Create a Great Tables table from `github_repos.csv` that:\n- Formats stars with K suffix (e.g., 23.4K)\n- Formats forks with comma separators\n- Creates a bar chart in the stars column (using nanoplot)\n- Colors the last_commit_days column: green for <3, yellow for 3-7, red for >7\n- Adds a spanner \"Issues\" over issues_open and issues_closed\n- Adds a title \"GitHub Repository Metrics\"\n\nThe CSV has columns: repo, language, stars, forks, issues_open, issues_closed, prs_merged, last_commit_days"
+}
