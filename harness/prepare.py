@@ -73,7 +73,7 @@ async def _check_session(config_file: Path, workspace: Path) -> dict[str, bool]:
         server_parameters={"cwd": str(workspace)},
     ) as c:
         out = await c.send(python=_PROBE.replace("REPO", repr(str(REPO))))
-    return json.loads(out.strip().splitlines()[-1])
+    return json.loads(out.text.strip().splitlines()[-1])
 
 
 def main() -> None:
