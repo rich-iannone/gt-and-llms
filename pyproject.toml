@@ -6,7 +6,7 @@ version = "0"
 requires-python = "==3.12.*"
 dependencies = [
   "chatlas[anthropic]==0.23.0",
-  "mcp-console[chatlas]==0.0.6",
+  "mcp-console[chatlas]==0.0.7",
   "python-dotenv>=1.2",
   "pyyaml>=6.0",
 ]
