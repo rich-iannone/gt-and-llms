@@ -21,7 +21,9 @@ with a paired bootstrap. Metrics:
 
 Then, for each pairwise comparison judged in the run (harness/judge.py pairwise), the arm's
 win rate (a tie counts half), averaged over a prompt's repeats and then over prompts, and the
-share of pairs where the judge's two orders agreed.
+share of pairs where the judge's two orders agreed. With two or more comparisons, a
+Bradley-Terry fit to all of them gives each arm's probability of beating the baseline, so arms
+never compared directly can be ranked too.
 
 Writes runs/<run-id>/summary.json. Trials without a score.json, scored with different intent
 files or scoring code, or judged with different judge instructions, are reported.
@@ -117,27 +119,109 @@ def load(run_dir: Path, split: str | None) -> tuple[list[dict], list[str]]:
     return trials, problems
 
 
-def pairwise(run_dir: Path, split: str | None, seed: int = 0) -> dict:
+def load_pairs(run_dir: Path, split: str | None) -> dict[str, list[dict]]:
+    """Pairwise records by comparison (<arm>-vs-<other>), each with its prompt."""
+    out = {}
+    for comp in sorted(p for p in (run_dir / "pairwise").glob("*-vs-*") if p.is_dir()):
+        records = []
+        for path in sorted(comp.glob("*/r*.json")):
+            if split and corpus.load(path.parent.name).split != split:
+                continue
+            records.append(json.loads(path.read_text()) | {"prompt": path.parent.name})
+        out[comp.name] = records
+    return out
+
+
+def pairwise(pairs: dict[str, list[dict]], seed: int = 0) -> dict:
     """Each pairwise comparison's win rate for its arm, and the share of pairs whose two
     orders agreed (pairs decided by a missing render aren't counted in it)."""
     rng = random.Random(seed)
     out = {}
-    for comp in sorted(p for p in (run_dir / "pairwise").glob("*-vs-*") if p.is_dir()):
+    for comp, records in pairs.items():
         scores: dict[str, list[float]] = defaultdict(list)
-        consistent, hashes = [], set()
-        for path in sorted(comp.glob("*/r*.json")):
-            if split and corpus.load(path.parent.name).split != split:
-                continue
-            rec = json.loads(path.read_text())
-            scores[path.parent.name].append(rec["arm_score"])
-            hashes.add(rec["instructions_sha256"])
-            if "consistent" in rec:
-                consistent.append(float(rec["consistent"]))
+        for rec in records:
+            scores[rec["prompt"]].append(rec["arm_score"])
+        consistent = [float(rec["consistent"]) for rec in records if "consistent" in rec]
         row = bootstrap({p: _mean(xs) for p, xs in scores.items()}, rng)
-        row["pairs"] = sum(len(xs) for xs in scores.values())
+        row["pairs"] = len(records)
         row["consistent"] = _mean(consistent) if consistent else None
-        row["instructions"] = len(hashes)
-        out[comp.name] = row
+        row["instructions"] = len({rec["instructions_sha256"] for rec in records})
+        out[comp] = row
+    return out
+
+
+# Each pair of arms compared gets one virtual tie, so that an arm that wins (or loses) every
+# pair still gets a finite strength
+BT_PRIOR = 1.0
+
+
+def _bt_fit(games: dict[tuple[str, str], list[float]]) -> dict[str, float]:
+    """Bradley-Terry strengths by minorization-maximization (Hunter 2004), a tie counting
+    half a win to each side. `games` maps (i, j) to [games played, i's score]."""
+    arms = sorted({a for pair in games for a in pair})
+    wins = dict.fromkeys(arms, 0.0)
+    played: dict[str, dict[str, float]] = {a: defaultdict(float) for a in arms}
+    for (i, j), (n, w) in games.items():
+        n, w = n + BT_PRIOR, w + BT_PRIOR / 2
+        wins[i] += w
+        wins[j] += n - w
+        played[i][j] += n
+        played[j][i] += n
+    p = dict.fromkeys(arms, 1.0)
+    for _ in range(1000):
+        new = {i: wins[i] / sum(n / (p[i] + p[j]) for j, n in played[i].items()) for i in arms}
+        total = sum(new.values())
+        new = {i: v * len(arms) / total for i, v in new.items()}
+        done = max(abs(new[i] - p[i]) for i in arms) < 1e-10
+        p = new
+        if done:
+            break
+    return p
+
+
+def bradley_terry(pairs: dict[str, list[dict]], seed: int = 0) -> dict | None:
+    """Every arm's probability of beating the baseline, from a Bradley-Terry fit to all the
+    comparisons at once, with a bootstrap over prompts. None with fewer than two comparisons
+    (one comparison's win rate says it all)."""
+    if len(pairs) < 2:
+        return None
+    # prompt -> (arm, other) -> [pairs, arm's score]
+    by_prompt: dict[str, dict] = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0]))
+    for comp, records in pairs.items():
+        arm, other = comp.split("-vs-")
+        for rec in records:
+            g = by_prompt[rec["prompt"]][(arm, other)]
+            g[0] += 1
+            g[1] += rec["arm_score"]
+    arms = sorted({a for comp in pairs for a in comp.split("-vs-")})
+    ref = "baseline" if "baseline" in arms else arms[0]
+    # Strengths only compare within arms linked by a chain of comparisons
+    reached, edges = {ref}, [comp.split("-vs-") for comp in pairs]
+    while new := {b for e in edges for a, b in (e, e[::-1]) if a in reached} - reached:
+        reached |= new
+    if reached != set(arms):
+        return None
+
+    def fit(prompts: list[str]) -> dict[str, float]:
+        games: dict = defaultdict(lambda: [0.0, 0.0])
+        for prompt in prompts:
+            for key, (n, w) in by_prompt[prompt].items():
+                games[key][0] += n
+                games[key][1] += w
+        p = _bt_fit(games)
+        return {a: p[a] / (p[a] + p[ref]) if a in p else None for a in arms}
+
+    prompts = sorted(by_prompt)
+    if not prompts:
+        return None
+    point = fit(prompts)
+    rng = random.Random(seed)
+    draws = [fit(rng.choices(prompts, k=len(prompts))) for _ in range(BOOTSTRAP)]
+    out = {"reference": ref, "prompts": len(prompts), "arms": {}}
+    for a in arms:
+        xs = sorted(d[a] for d in draws if d[a] is not None)
+        ci = [xs[int(0.025 * len(xs))], xs[int(0.975 * len(xs)) - 1]] if xs else None
+        out["arms"][a] = {"mean": point[a], "ci": ci}
     return out
 
 
@@ -201,7 +285,8 @@ def main() -> None:
     args = parser.parse_args()
     trials, problems = load(args.run_dir, args.split)
     summary = summarize(trials)
-    pairs = pairwise(args.run_dir, args.split)
+    records = load_pairs(args.run_dir, args.split)
+    pairs, bt = pairwise(records), bradley_terry(records)
     for comp, row in pairs.items():
         if row["instructions"] > 1:
             problems.append(
@@ -209,7 +294,13 @@ def main() -> None:
             )
     (args.run_dir / "summary.json").write_text(
         json.dumps(
-            {"split": args.split, "summary": summary, "pairwise": pairs, "problems": problems},
+            {
+                "split": args.split,
+                "summary": summary,
+                "pairwise": pairs,
+                "bradley_terry": bt,
+                "problems": problems,
+            },
             indent=2,
         )
     )
@@ -227,6 +318,13 @@ def main() -> None:
             agree = "-" if row["consistent"] is None else f"{100 * row['consistent']:.0f}%"
             print(f"| {comp} | {row['pairs']} | {_fmt(row, 'pct')} | {agree} |")
         print("\nWin rate: the arm's, a tie counting half; 50% is no difference.")
+    if bt:
+        ref = bt["reference"]
+        print(f"\n| arm | P(beats {ref}) |\n|---|---|")
+        for arm, cell in bt["arms"].items():
+            if arm != ref:
+                print(f"| {arm} | {_fmt(cell, 'pct')} |")
+        print(f"\nBradley-Terry, fitted to all {len(pairs)} comparisons at once.")
     for p in problems:
         print(f"warning: {p}")
 
