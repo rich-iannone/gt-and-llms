@@ -11,7 +11,10 @@ baseline:
 
 llms_txt:
   description: Great Tables llms.txt in context
-  # Snapshot taken from the GT version pinned in console/agent-env
+  # Snapshot taken from the GT version pinned in console/agent-env: great-docs/llms.txt as
+  # great-docs builds it at 9516ea8 (2026-11-16), unedited. It's an index of links to the
+  # reference pages, which the agent can't follow (the sandbox has no network), so this arm
+  # measures the docs as shipped rather than their full content.
   context: arms/llms_txt/llms.txt
 
 rich:
