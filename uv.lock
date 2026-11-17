@@ -236,7 +236,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "chatlas", extras = ["anthropic"], specifier = "==0.23.0" },
-    { name = "mcp-console", extras = ["chatlas"], specifier = "==0.0.6" },
+    { name = "mcp-console", extras = ["chatlas"], specifier = "==0.0.7" },
     { name = "python-dotenv", specifier = ">=1.2" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]
@@ -449,14 +449,14 @@ wheels = [
 
 [[package]]
 name = "mcp-console"
-version = "0.0.6"
+version = "0.0.7"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/b6/3458084890cf96cddcc44871b6ab358066811c8064d0ba3020250390adc8/mcp_console-0.0.6-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:edbca8afa6b00aa3fee7fdadc376fcf2f66ee08936e0fbbfbab9658e60e68d8d", size = 12657020 },
-    { url = "https://files.pythonhosted.org/packages/dc/06/eb96f9e48dd64b7aae7a63ad151ae85e004580c2448b4e85eff9abcb08f1/mcp_console-0.0.6-py3-none-macosx_11_0_arm64.whl", hash = "sha256:1a6eab83854cec009495e4a105e2e7ebaaf7b4a41ca38dbfd4d1c71475f85a61", size = 12065784 },
-    { url = "https://files.pythonhosted.org/packages/53/3e/a2bd547e3f767924df3c849dd0644ee6ddeef4e9c586c43f779a201854a5/mcp_console-0.0.6-py3-none-manylinux_2_34_aarch64.whl", hash = "sha256:5f397dc9c254263cbef4cb15133336fa70583f9adb1d8f4844fa877e90209de6", size = 13536518 },
-    { url = "https://files.pythonhosted.org/packages/bd/89/6d71840a391fca33b7f2402db649c132dc2bd56d8740b8f2fd6cf7ed879a/mcp_console-0.0.6-py3-none-manylinux_2_34_x86_64.whl", hash = "sha256:0407052c17c86dc8f1481abe0a722f37daf9833ac015a15a089d3b088851bcbe", size = 14252751 },
-    { url = "https://files.pythonhosted.org/packages/98/d5/aafd65b90074b6cd7efcd7f479e65fe35219f7af69096ce57d2d950dc3a3/mcp_console-0.0.6-py3-none-win_amd64.whl", hash = "sha256:054d7de8ea462b5ebde0dc7a8921cb48310164195d8500309a34d4463cdbc208", size = 13733749 },
+    { url = "https://files.pythonhosted.org/packages/ed/98/23f57021392b15bdff52cf45bfe7348361965298eb17e8b0dfda2d1df910/mcp_console-0.0.7-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:f61d2369bf1a06c498b26d734669fe1d97eee4cc3a4b1c297bbec11aaa2c83ae", size = 13080734 },
+    { url = "https://files.pythonhosted.org/packages/bf/53/45b790b6c2499c4d1f98ea7d4dd6272a1572bee54b62da7283d5bd2d76d9/mcp_console-0.0.7-py3-none-macosx_11_0_arm64.whl", hash = "sha256:a252ca2a7d53224df25532d31c40adef5b25e7588d6ada17a714ad895bc96359", size = 12427885 },
+    { url = "https://files.pythonhosted.org/packages/a4/38/28ddd927d20af0750cd7f916f9e8e35e4c190880141753a67bcb38ea9745/mcp_console-0.0.7-py3-none-manylinux_2_34_aarch64.whl", hash = "sha256:afda3a238c490ac10f2024f971701604219d97ee26fa933245c14e1edb011d1f", size = 13943344 },
+    { url = "https://files.pythonhosted.org/packages/de/e4/5e0bd2d7ee367ebd8ade49e7e7bc6c06144c6751b2eb8cb4e9d3e56b859f/mcp_console-0.0.7-py3-none-manylinux_2_34_x86_64.whl", hash = "sha256:9338ca56b90717d0e95b05afc22c830d7a492f720c7cb794dde9ca8a5a4d0a47", size = 14678648 },
+    { url = "https://files.pythonhosted.org/packages/ab/2f/250f3cb04184aba5d2b4d04de8c9673a7d29b6789323903d7fa64f526be4/mcp_console-0.0.7-py3-none-win_amd64.whl", hash = "sha256:2e688906c8d61f1cdebf6758cd7d60af35df4132824db80075be608fb7f31d23", size = 13942889 },
 ]
 
 [package.optional-dependencies]
