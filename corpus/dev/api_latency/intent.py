@@ -1,4 +1,4 @@
-# Model-drafted 2026-11-16; review pending (PROVENANCE.md).
+# Model-drafted 2026-11-16; reviewed by Rich 2026-11-16 (PROVENANCE.md).
 """Checks for api_latency: one per bullet in the prompt.
 
 Every number in the data is whole, so "comma separators" doesn't fix the decimals. A
