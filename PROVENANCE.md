@@ -19,9 +19,9 @@ field, and each `truth.py` starts with a header saying where it came from.
 
 | Items | Prompt | `truth.py` | `intent.py` | Reviewed by Rich |
 |---|---|---|---|---|
-| api_latency, tech_salaries, github_repos (spec) | Rich, 2025 (`archive/2025-llms-txt/eval_dataset_no_docs.jsonl`), copied verbatim 2026-11-05 | Model-drafted 2026-11-05 | Model-drafted 2026-11-16 | prompts: yes (original author); truths: yes, 2026-11-05; `intent.py`: not yet |
-| The 20 gt-skill items (intent) | Hrudith L., HrudithL/gt-skill@d1ed4e6, verbatim | gt-skill's ground truths, ported by `harness/port_gt_skill.py` (data path and `gt_tbl` only) | Model-drafted 2026-11-16; row counts, grouping and sorts from each truth's `REQUIRED_INSTRUCTIONS` (Hrudith L.) | prompts and truths: yes, 2026-11-05; `intent.py`: not yet |
-| The 13 proposed items (`source: proposed …`) | Model-drafted 2026-11-05 | Model-drafted 2026-11-05 | Model-drafted 2026-11-16 | prompts and truths: yes, 2026-11-05; `intent.py`: not yet |
+| api_latency, tech_salaries, github_repos (spec) | Rich, 2025 (`archive/2025-llms-txt/eval_dataset_no_docs.jsonl`), copied verbatim 2026-11-05 | Model-drafted 2026-11-05 | Model-drafted 2026-11-16 | prompts: yes (original author); truths: yes, 2026-11-05; `intent.py`: yes, 2026-11-16 |
+| The 20 gt-skill items (intent) | Hrudith L., HrudithL/gt-skill@d1ed4e6, verbatim | gt-skill's ground truths, ported by `harness/port_gt_skill.py` (data path and `gt_tbl` only) | Model-drafted 2026-11-16; row counts, grouping and sorts from each truth's `REQUIRED_INSTRUCTIONS` (Hrudith L.) | prompts and truths: yes, 2026-11-05; `intent.py`: yes, 2026-11-16 |
+| The 13 proposed items (`source: proposed …`) | Model-drafted 2026-11-05 | Model-drafted 2026-11-05 | Model-drafted 2026-11-16 | prompts and truths: yes, 2026-11-05; `intent.py`: yes, 2026-11-16 |
 
 gt-skill's 4 airquality/islands items aren't ported (plan §7). The datasets come from GT
 0.22.0 (`harness/export_data.py`); the 8 that gt-skill's truths use are byte-identical to the
