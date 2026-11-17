@@ -13,12 +13,18 @@ with a paired bootstrap. Metrics:
     l1_all       all intent checks passed (share of trials)
     l2           share of the truth's columns shown (score/data.py)
     gt_api       trials with at least one GT API error (share)
+    judge        mean of the judge's five grades, 1 to 5 (harness/judge.py absolute); a
+                 table that didn't render counts as 1
     cost_usd     per trial
     convergence  share of repeat pairs agreeing on each structure field, averaged over the
                  fields (prompts with 2+ repeats)
 
-Writes runs/<run-id>/summary.json. Trials without a score.json, or scored with different
-intent files or scoring code, are reported.
+Then, for each pairwise comparison judged in the run (harness/judge.py pairwise), the arm's
+win rate (a tie counts half), averaged over a prompt's repeats and then over prompts, and the
+share of pairs where the judge's two orders agreed.
+
+Writes runs/<run-id>/summary.json. Trials without a score.json, scored with different intent
+files or scoring code, or judged with different judge instructions, are reported.
 """
 
 import argparse
@@ -34,18 +40,21 @@ if not __package__:
 
 from harness import corpus
 
-METRICS = ("l0", "l1", "l1_all", "l2", "gt_api", "cost_usd")
+METRICS = ("l0", "l1", "l1_all", "l2", "gt_api", "judge", "cost_usd")
 BOOTSTRAP = 2000
 
 
-def trial_metrics(score: dict) -> dict[str, float | None]:
+def trial_metrics(score: dict, judged: dict | None = None) -> dict[str, float | None]:
+    """A trial's metrics; `judged` is its judge/absolute.json, if it has been judged."""
     l1, l2 = score["l1"], score["l2"]
+    judge = None if judged is None else (judged["mean"] if judged["grades"] else 1.0)
     return {
         "l0": float(score["l0"]["passed"]),
         "l1": l1["rate"] if l1 else None,
         "l1_all": float(l1["all"]) if l1 else None,
         "l2": l2.get("score") if l2 else None,
         "gt_api": float(score["process"]["gt_api_errors"] > 0),
+        "judge": judge,
         "cost_usd": score["process"]["cost_usd"],
     }
 
@@ -81,6 +90,7 @@ def bootstrap(per_prompt: dict[str, float], rng: random.Random) -> dict:
 def load(run_dir: Path, split: str | None) -> tuple[list[dict], list[str]]:
     trials, problems = [], []
     hashes: dict[str, set] = defaultdict(set)
+    judge_hashes: set = set()
     for path in sorted(run_dir.glob("*/*/r*/trial.json")):
         trial = json.loads(path.read_text())
         item_split = corpus.load(trial["prompt_id"]).split
@@ -93,12 +103,42 @@ def load(run_dir: Path, split: str | None) -> tuple[list[dict], list[str]]:
         score = json.loads(score_path.read_text())
         for key in ("intent_sha256", "scorer_sha256"):
             hashes[f"{trial['prompt_id']}:{key}"].add(score["scored_with"][key])
-        trials.append({"trial": trial, "score": score})
+        judge_path = path.parent / "judge/absolute.json"
+        judged = json.loads(judge_path.read_text()) if judge_path.is_file() else None
+        if judged:
+            judge_hashes.add(judged["instructions_sha256"])
+        trials.append({"trial": trial, "score": score, "judged": judged})
     for key, seen in sorted(hashes.items()):
         if len(seen) > 1:
             prompt, what = key.split(":")
             problems.append(f"{prompt}: trials scored with {len(seen)} different {what[:-7]}s")
+    if len(judge_hashes) > 1:
+        problems.append(f"trials judged with {len(judge_hashes)} different judge instructions")
     return trials, problems
+
+
+def pairwise(run_dir: Path, split: str | None, seed: int = 0) -> dict:
+    """Each pairwise comparison's win rate for its arm, and the share of pairs whose two
+    orders agreed (pairs decided by a missing render aren't counted in it)."""
+    rng = random.Random(seed)
+    out = {}
+    for comp in sorted(p for p in (run_dir / "pairwise").glob("*-vs-*") if p.is_dir()):
+        scores: dict[str, list[float]] = defaultdict(list)
+        consistent, hashes = [], set()
+        for path in sorted(comp.glob("*/r*.json")):
+            if split and corpus.load(path.parent.name).split != split:
+                continue
+            rec = json.loads(path.read_text())
+            scores[path.parent.name].append(rec["arm_score"])
+            hashes.add(rec["instructions_sha256"])
+            if "consistent" in rec:
+                consistent.append(float(rec["consistent"]))
+        row = bootstrap({p: _mean(xs) for p, xs in scores.items()}, rng)
+        row["pairs"] = sum(len(xs) for xs in scores.values())
+        row["consistent"] = _mean(consistent) if consistent else None
+        row["instructions"] = len(hashes)
+        out[comp.name] = row
+    return out
 
 
 def summarize(trials: list[dict], seed: int = 0) -> dict:
@@ -108,7 +148,7 @@ def summarize(trials: list[dict], seed: int = 0) -> dict:
     structures: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
     for t in trials:
         arm, prompt = t["trial"]["arm"], t["trial"]["prompt_id"]
-        by_arm[arm][prompt].append(trial_metrics(t["score"]))
+        by_arm[arm][prompt].append(trial_metrics(t["score"], t.get("judged")))
         structures[arm][prompt].append(t["score"]["structure"])
 
     def per_prompt(arm: str, metric: str) -> dict[str, float]:
@@ -134,14 +174,22 @@ def summarize(trials: list[dict], seed: int = 0) -> dict:
     return out
 
 
-def _fmt(cell: dict, pct: bool) -> str:
+# How to show a metric and its difference from baseline
+FORMATS = {
+    "pct": (lambda x: f"{100 * x:.0f}%", lambda x: f"{100 * x:+.0f}"),
+    "usd": (lambda x: f"${x:.3f}", lambda x: f"{x:+.3f}"),
+    "grade": (lambda x: f"{x:.2f}", lambda x: f"{x:+.2f}"),
+}
+KIND = {"cost_usd": "usd", "judge": "grade"}
+
+
+def _fmt(cell: dict, kind: str) -> str:
     if cell["mean"] is None:
         return "-"
-    f = (lambda x: f"{100 * x:.0f}%") if pct else (lambda x: f"${x:.3f}")
+    f, g = FORMATS[kind]
     text = f"{f(cell['mean'])} [{f(cell['ci'][0])}, {f(cell['ci'][1])}]"
     if "vs_baseline" in cell and cell["vs_baseline"]["mean"] is not None:
         d = cell["vs_baseline"]
-        g = (lambda x: f"{100 * x:+.0f}") if pct else (lambda x: f"{x:+.3f}")
         text += f" ({g(d['mean'])} [{g(d['ci'][0])}, {g(d['ci'][1])}])"
     return text
 
@@ -153,17 +201,32 @@ def main() -> None:
     args = parser.parse_args()
     trials, problems = load(args.run_dir, args.split)
     summary = summarize(trials)
+    pairs = pairwise(args.run_dir, args.split)
+    for comp, row in pairs.items():
+        if row["instructions"] > 1:
+            problems.append(
+                f"{comp}: pairs judged with {row['instructions']} different judge instructions"
+            )
     (args.run_dir / "summary.json").write_text(
-        json.dumps({"split": args.split, "summary": summary, "problems": problems}, indent=2)
+        json.dumps(
+            {"split": args.split, "summary": summary, "pairwise": pairs, "problems": problems},
+            indent=2,
+        )
     )
 
     cols = [*METRICS, "convergence"]
     print("| arm | trials | " + " | ".join(cols) + " |")
     print("|---|---|" + "---|" * len(cols))
     for arm, row in summary.items():
-        cells = [_fmt(row[c], pct=c != "cost_usd") for c in cols]
+        cells = [_fmt(row[c], KIND.get(c, "pct")) for c in cols]
         print(f"| {arm} | {row['trials']} | " + " | ".join(cells) + " |")
     print("\nMeans over prompts with 95% bootstrap CIs; (differences from baseline, in points).")
+    if pairs:
+        print("\n| comparison | pairs | win rate | orders agree |\n|---|---|---|---|")
+        for comp, row in pairs.items():
+            agree = "-" if row["consistent"] is None else f"{100 * row['consistent']:.0f}%"
+            print(f"| {comp} | {row['pairs']} | {_fmt(row, 'pct')} | {agree} |")
+        print("\nWin rate: the arm's, a tie counting half; 50% is no difference.")
     for p in problems:
         print(f"warning: {p}")
 
