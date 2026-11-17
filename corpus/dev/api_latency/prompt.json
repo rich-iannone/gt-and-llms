@@ -1,0 +1,10 @@
+{
+  "id": "api_latency",
+  "style": "spec",
+  "difficulty": "easy",
+  "data": [
+    "api_latency.csv"
+  ],
+  "source": "gt-and-llms 2025, eval_dataset_no_docs.jsonl (verbatim)",
+  "prompt": "Load the API latency data from `api_latency.csv` using Polars, then create a Great Tables table that:\n- formats the millisecond columns with comma separators\n- formats the requests column with comma separators\n- formats the errors column with comma separators\n- highlights rows where p99_ms is over 1000ms in light red\n- adds a title \"API Performance Dashboard\"\n- sorts by p99_ms descending\n- puts the endpoint column in the stub\n\nThe CSV has columns: endpoint, method, avg_ms, p95_ms, p99_ms, requests, errors"
+}
