@@ -89,7 +89,7 @@ Each item is a directory, `corpus/<split>/<id>/`, holding:
   and `source`
 - `truth.py`: a reference table, which must assign the GT to `gt_tbl`. It's used for data
   checks, not as a style target. `truth.png` is its render, for reading.
-- `intent.py`: the item's checks, written by hand (see below)
+- `intent.py`: the item's checks (see below), human-written or human-reviewed
 
 Items are in `unsplit/` until `harness/split.py` divides them between `dev/` and `test/`.
 
@@ -131,15 +131,35 @@ fix the names, find it by its values: `t.col(like=truth.col("msrp"))`. The check
 - **Shape:** `row_count`, `has_columns`, `stub`, `grouped_by`, `spanner`, `summary_row`
 - **Values:** `same_values` (at the precision shown, at the usual scalings), `order`
 - **Formats:** `formatted` with `number()`, `currency()`, `percent()`, `compact()` or
-  `INTEGER`; these take `sep=`/`dec=` for other locales
+  `INTEGER`, or `scientific()`; these take `sep=`/`dec=` for other locales
 - **Missing values and plots:** `no_raw_missing`, `nanoplot`
 - **Styles:** `filled` (a row highlight), `gradient` (a color scale), `text_styled`
+- **Anything else:** `expect(name, passed, detail)` records an item's own check, for
+  example one built from `t.fill()`, `t.text_style()` or a column's `.html`
 
 The docstrings in `harness/score/intent.py` give each check's details.
 
 L2 checks that the table shows the truth's data, column by column. By default it uses every
 visible column of the truth. If only some of them are what the prompt asks for, name those in
 the `intent.py`: `DATA_COLUMNS = ["car", "msrp"]`.
+
+## The skill
+
+The `rich` arm's skill is written by hand in great-tables (`skills/great-tables/`) and frozen
+here at a commit. These tools don't write skill text:
+
+```bash
+uv run harness/freeze_skill.py ~/py_projects/great-tables --rev <sha>   # into arms/rich/skill
+uv run harness/check_skill.py                    # its GT API against the pinned GT
+uv run harness/check_skill.py arms/prose/skill
+uv run harness/api_errors.py runs/<run-id> --split dev    # GT API errors trials hit, by arm
+```
+
+`freeze_skill.py` copies the files as committed, so uncommitted edits aren't frozen, and
+records the commit and the tree's hash in PROVENANCE.md (`--replace` to refreeze).
+`check_skill.py` checks the method names, `loc`/`style`/`vals` names and call signatures in
+the skill's code blocks, `.py` files and inline code. Calls the prose warns against ("don't
+write `opt_row_striping(color=...)`") are listed apart and don't fail the check.
 
 ## Layout
 
@@ -152,7 +172,7 @@ the `intent.py`: `DATA_COLUMNS = ["car", "msrp"]`.
 | `harness/` | The trial runner, corpus tools, scoring (`score/`), the judge and calibration |
 | `judge/` | The judge's instructions and rubric |
 | `calibration/` | Calibration samples and their ratings (`harness/calibrate.py`) |
-| `tests/` | Tests of the scoring library and the judge's offline parts |
+| `tests/` | Tests of the scoring library, the judge's offline parts and the skill tools |
 | `spikes/phase0/` | Phase 0 feasibility spikes and findings |
 | `archive/2025-llms-txt/` | The 2025 Inspect eval of `llms.txt` and its write-ups |
 
