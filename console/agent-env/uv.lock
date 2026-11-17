@@ -127,7 +127,7 @@ dependencies = [
 requires-dist = [
     { name = "great-tables", git = "https://github.com/posit-dev/great-tables?rev=9516ea8654e2d45a2d642c6fddc6a7e2e9b14cc7" },
     { name = "matplotlib" },
-    { name = "nokap", git = "https://github.com/posit-dev/nokap?rev=0273091dac7418c1c36b53cc136d257a2fe48e45" },
+    { name = "nokap", specifier = "==0.2.0" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "polars", specifier = "==2.1.0" },
@@ -226,11 +226,15 @@ wheels = [
 
 [[package]]
 name = "nokap"
-version = "0.1.1.dev47+g0273091da"
-source = { git = "https://github.com/posit-dev/nokap?rev=0273091dac7418c1c36b53cc136d257a2fe48e45#0273091dac7418c1c36b53cc136d257a2fe48e45" }
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e6/3b/775132d25cd3d3dc1590f702a298ffc5291e381ef92c38086d081a977861/nokap-0.2.0.tar.gz", hash = "sha256:c98bff7129981e86268f7b32f6371a3805924f686035a0d035227b3d194a7227", size = 110378 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/3e/ae0533a425082d646f238a4f06995f178aaf80b1927fffb081f29b9877af/nokap-0.2.0-py3-none-any.whl", hash = "sha256:c5e7fa89c2c4c8f68b75261f3d49eadb0c63526dad04925adcd7aa3621036c19", size = 48580 },
 ]
 
 [[package]]
