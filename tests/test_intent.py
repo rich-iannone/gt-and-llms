@@ -22,9 +22,11 @@ from harness.score.intent import (  # noqa: E402
     compact,
     currency,
     decimal_mark,
+    fold,
     number,
     parse_number,
     percent,
+    scientific,
 )
 
 API = pl.DataFrame(
@@ -99,6 +101,30 @@ def test_format_patterns():
     for pattern in (INTEGER, percent(1), compact(1), currency(0)):
         assert not re.fullmatch(pattern, "x5") and not re.fullmatch(pattern, "=5")
     assert re.fullmatch(INTEGER, "−5") and re.fullmatch(INTEGER, "+5")
+    sci = scientific(2)
+    assert re.fullmatch(sci, "6.63 × 10 −34") and re.fullmatch(sci, "6.63×10⁻³⁴")
+    assert re.fullmatch(sci, "1.00") and not re.fullmatch(sci, "6.63e-34")
+    assert not re.fullmatch(sci, "6.6 × 10 −34")
+
+
+def test_fold_and_labels():
+    assert fold("O₃") == fold("O<sub>3</sub>") == fold("o 3") == "o3"
+    assert fold("J Hz⁻¹") == fold("J Hz<sup>&minus;1</sup>") == "jhz-1"
+    # Text columns compare as fold reads them
+    sub = Table(GT(pl.DataFrame({"f": ["O3", "NO2"]})).fmt_chem("f"))
+    uni = Table(GT(pl.DataFrame({"f": ["NO₂", "O₃"]})))
+    assert uni.same_values("f", sub.col("f"))
+    # Unit labels are read as text, with their HTML kept
+    units = Table(
+        GT(pl.DataFrame({"k": [1.0]}))
+        .cols_label(k="k, {{cm^3 s^-1}}")
+        .tab_spanner("Rate, {{s^-1}}", "k")
+    )
+    k = units.col("k")
+    assert k.label.startswith("k, cm 3") and "<sup" in k.label_html
+    assert units.spanners[0]["label"] == "Rate, s −1" and "<sup" in units.spanners[0]["html"]
+    assert units.expect("custom", True) and not units.expect("custom", False, "why")
+    assert units.results[-1].detail == "why"
 
 
 def test_heading_and_structure(api: Table):
