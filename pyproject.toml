@@ -1,0 +1,20 @@
+# The harness environment (chatlas + mcp-console on the host). The agent's own Python is
+# console/agent-env, a separate locked project.
+[project]
+name = "gt-and-llms"
+version = "0"
+requires-python = "==3.12.*"
+dependencies = [
+  "chatlas[anthropic]==0.23.0",
+  "mcp-console[chatlas]==0.0.6",
+  "python-dotenv>=1.2",
+  "pyyaml>=6.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+# Truths are corpus content; ported ones stay as gt-skill wrote them, for a clean diff
+extend-exclude = ["archive", "spikes", "corpus/*/*/truth.py"]
