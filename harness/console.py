@@ -70,9 +70,10 @@ _RUNNING = "[running; poll with an empty send]"
 
 async def run_cell(c: mcp_console.AsyncMCPConsole, python: str, timeout_s: float) -> str:
     """Run one Python cell to completion and return its output."""
-    out = await c.send(python=python, timeout_ms=int(timeout_s * 1000))
+    out = (await c.send(python=python, timeout_ms=int(timeout_s * 1000))).text
     while out.rstrip().endswith(_RUNNING):
-        out = out.rstrip().removesuffix(_RUNNING) + await c.send(timeout_ms=int(timeout_s * 1000))
+        more = (await c.send(timeout_ms=int(timeout_s * 1000))).text
+        out = out.rstrip().removesuffix(_RUNNING) + more
     return out
 
 
