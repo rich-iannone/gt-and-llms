@@ -1,0 +1,24 @@
+# Comparison arms (plan D7). Every arm gets arms/base_prompt.md as its system prompt; an arm
+# can add one of:
+#   context: a file appended to the system prompt inside a <docs> block
+#   skill:   a skill directory. SKILL.md's body (frontmatter stripped) is appended inside a
+#            <skill> block, and the directory is copied to skill/ in the workspace so the agent
+#            can read references/ through Console (plan D2).
+# Paths are relative to the repo root. An arm whose files don't exist yet can't be run.
+
+baseline:
+  description: Base prompt only
+
+llms_txt:
+  description: Great Tables llms.txt in context
+  # Snapshot taken from the GT version pinned in console/agent-env
+  context: arms/llms_txt/llms.txt
+
+rich:
+  description: Rich's hand-written skill
+  # Copied from great-tables skills/great-tables/ at a pinned SHA (plan D1, Phase 5)
+  skill: arms/rich/skill
+
+prose:
+  description: HrudithL/gt-skill `prose` variant, ported unchanged
+  skill: arms/prose/skill
