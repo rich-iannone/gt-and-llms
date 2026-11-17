@@ -13,4 +13,4 @@ Answer A, B or tie. Say tie when neither table would serve the reader clearly be
 break a tie on decoration, size or style alone.
 
 Write a rationale of one to three sentences first, naming the differences that decided it.
-Then give your verdict. Submit both with the `submit_verdict` tool, once.
+Then give your verdict. Give both in the response format.
